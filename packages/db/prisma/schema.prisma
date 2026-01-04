@@ -11,11 +11,19 @@ datasource db {
 model User {
   id            String    @id @default(cuid())
   name          String?
-  email         String    @unique
+  email         String?   @unique
   emailVerified DateTime?
+  phone         String?   @unique  // For SMS login
+  password      String?   // Hashed password for credentials login
   image         String?
   accounts      Account[]
   sessions      Session[]
+
+  // Quick Record relations
+  timeBlockCategories TimeBlockCategory[]
+  timeBlocks          TimeBlock[]
+  questionAnswers     QuestionAnswer[]
+  dailyQuestions      UserDailyQuestion[]
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -70,4 +78,100 @@ model Post {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ============================================
+// Quick Record Service Models
+// ============================================
+
+// Time Block Categories (e.g., longTerm, work, rest, exercise)
+model TimeBlockCategory {
+  id          String   @id @default(cuid())
+  name        String   // e.g., "longTerm", "work", "rest"
+  label       String   // Display name: "长期目标", "工作", "休息"
+  color       String   // Hex color for UI
+  icon        String?  // Icon name
+  sortOrder   Int      @default(0)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timeBlocks  TimeBlock[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, name])
+}
+
+// Time Block Records
+model TimeBlock {
+  id          String   @id @default(cuid())
+  date        DateTime @db.Date // The date of the record
+  startTime   String   // "10:00" format
+  endTime     String   // "11:00" format
+  categoryId  String
+  category    TimeBlockCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  note        String?  // Optional note
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId, date])
+}
+
+// AI Daily Questions
+model DailyQuestion {
+  id          String   @id @default(cuid())
+  question    String   // The question text
+  category    String?  // Question category: reflection, planning, gratitude, etc.
+  answers     QuestionAnswer[]
+  userDaily   UserDailyQuestion[]
+
+  createdAt   DateTime @default(now())
+}
+
+// User's Daily Question Answers
+model QuestionAnswer {
+  id          String   @id @default(cuid())
+  questionId  String
+  question    DailyQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answer      String
+  date        DateTime @db.Date // The date user answered
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, questionId, date])
+}
+
+// User's Daily Assigned Question
+model UserDailyQuestion {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionId  String
+  question    DailyQuestion @relation(fields: [questionId], references: [id])
+  date        DateTime @db.Date
+  answered    Boolean  @default(false)
+
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, date])
+}
+
+// SMS Verification Codes
+model SmsVerification {
+  id          String   @id @default(cuid())
+  phone       String
+  code        String
+  type        String   // "login" | "register" | "reset_password"
+  expires     DateTime
+  used        Boolean  @default(false)
+
+  createdAt   DateTime @default(now())
+
+  @@index([phone, code])
 }

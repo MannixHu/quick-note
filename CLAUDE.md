@@ -4,7 +4,23 @@
 
 ## 项目概述
 
-**Universal App** - 跨平台全栈应用 (Web + Android)
+**快记 (QuickNote)** - 跨平台快速记录服务 (Web + Android + Mac)
+
+### 核心功能
+
+1. **时间块记录** - 类似 iOS "时间块" App，点击时间格快速生成如 "10:00-11:00 #longTerm" 的文本
+2. **每日问答** - AI 生成的深度思考问题，帮助用户反思成长
+3. **实时同步** - 手机端更改立即同步到电脑端/Web 端
+4. **用户认证** - 账号密码登录、短信验证码登录、忘记密码
+
+### 数据模型
+
+- `User` - 用户 (支持邮箱+密码、手机+验证码登录)
+- `TimeBlockCategory` - 时间块分类 (longTerm, work, study, rest, exercise)
+- `TimeBlock` - 时间块记录 (日期、开始时间、结束时间、分类)
+- `DailyQuestion` - 每日问题库
+- `QuestionAnswer` - 用户回答记录
+- `SmsVerification` - 短信验证码
 
 ## 技术栈速查
 

@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "Universal App",
+    "appName": "QuickNote",
     "loading": "Loading...",
     "error": "An error occurred",
     "retry": "Retry",
@@ -10,13 +10,74 @@
     "delete": "Delete",
     "edit": "Edit",
     "search": "Search",
-    "noData": "No data"
+    "noData": "No data",
+    "back": "Back",
+    "submit": "Submit",
+    "copy": "Copy",
+    "copied": "Copied"
   },
   "home": {
-    "title": "Universal App",
-    "description": "A cross-platform full-stack application built with Next.js + React Native",
+    "title": "QuickNote",
+    "description": "Track your time quickly, reflect deeply on life",
     "getStarted": "Get Started",
-    "apiHealth": "API Health"
+    "apiHealth": "API Health",
+    "features": {
+      "timeBlock": "Time Blocks",
+      "timeBlockDesc": "Record your time allocation like the TimeBlock app",
+      "dailyQuestion": "Daily Questions",
+      "dailyQuestionDesc": "AI-generated thought-provoking questions for self-reflection",
+      "sync": "Real-time Sync",
+      "syncDesc": "Multi-device sync, record anytime anywhere"
+    }
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "phone": "Phone",
+    "smsCode": "Verification Code",
+    "sendCode": "Send Code",
+    "resendCode": "Resend",
+    "forgotPassword": "Forgot Password?",
+    "resetPassword": "Reset Password",
+    "loginWithSms": "SMS Login",
+    "loginWithPassword": "Password Login",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "registerNow": "Register Now",
+    "loginNow": "Login Now"
+  },
+  "timeBlock": {
+    "title": "Time Blocks",
+    "today": "Today",
+    "selectCategory": "Select Category",
+    "addCategory": "Add Category",
+    "categoryName": "Category Name",
+    "categoryLabel": "Display Name",
+    "categoryColor": "Color",
+    "generateText": "Generate Text",
+    "copyText": "Copy Text",
+    "noBlocks": "No records today, click a time slot to start",
+    "categories": {
+      "longTerm": "Long Term",
+      "work": "Work",
+      "study": "Study",
+      "rest": "Rest",
+      "exercise": "Exercise"
+    }
+  },
+  "dailyQuestion": {
+    "title": "Daily Question",
+    "todayQuestion": "Today's Question",
+    "yourAnswer": "Your Answer",
+    "answerPlaceholder": "Write your thoughts...",
+    "submitAnswer": "Submit Answer",
+    "answered": "Answered",
+    "history": "Answer History",
+    "noQuestion": "Today's question is on its way..."
   },
   "theme": {
     "light": "Light",
