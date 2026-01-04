@@ -1,0 +1,36 @@
+{
+  "recommendations": [
+    // Biome (替代 ESLint + Prettier)
+    "biomejs.biome",
+
+    // TypeScript
+    "ms-vscode.vscode-typescript-next",
+
+    // Tailwind CSS
+    "bradlc.vscode-tailwindcss",
+
+    // Prisma
+    "prisma.prisma",
+
+    // React/React Native
+    "dsznajder.es7-react-js-snippets",
+    "msjsdiag.vscode-react-native",
+
+    // Docker
+    "ms-azuretools.vscode-docker",
+
+    // Git
+    "eamodio.gitlens",
+    "mhutchie.git-graph",
+
+    // i18n
+    "lokalise.i18n-ally",
+
+    // 其他
+    "dbaeumer.vscode-eslint",
+    "christian-kohler.path-intellisense",
+    "gruntfuggly.todo-tree",
+    "usernamehw.errorlens",
+    "yoavbls.pretty-ts-errors"
+  ]
+}

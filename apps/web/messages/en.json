@@ -1,0 +1,30 @@
+{
+  "common": {
+    "appName": "Universal App",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search",
+    "noData": "No data"
+  },
+  "home": {
+    "title": "Universal App",
+    "description": "A cross-platform full-stack application built with Next.js + React Native",
+    "getStarted": "Get Started",
+    "apiHealth": "API Health"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "language": {
+    "zh-CN": "简体中文",
+    "en": "English"
+  }
+}

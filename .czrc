@@ -1,0 +1,28 @@
+{
+  "path": "node_modules/cz-git",
+  "useEmoji": false,
+  "types": [
+    { "value": "feat", "name": "feat:     A new feature" },
+    { "value": "fix", "name": "fix:      A bug fix" },
+    { "value": "docs", "name": "docs:     Documentation only changes" },
+    { "value": "style", "name": "style:    Code style changes" },
+    { "value": "refactor", "name": "refactor: Code refactoring" },
+    { "value": "perf", "name": "perf:     Performance improvements" },
+    { "value": "test", "name": "test:     Adding tests" },
+    { "value": "build", "name": "build:    Build system changes" },
+    { "value": "ci", "name": "ci:       CI configuration changes" },
+    { "value": "chore", "name": "chore:    Other changes" },
+    { "value": "revert", "name": "revert:   Revert a commit" }
+  ],
+  "scopes": [
+    { "value": "web", "name": "web:      Web app changes" },
+    { "value": "mobile", "name": "mobile:   Mobile app changes" },
+    { "value": "api", "name": "api:      API changes" },
+    { "value": "db", "name": "db:       Database changes" },
+    { "value": "shared", "name": "shared:   Shared package changes" },
+    { "value": "ui", "name": "ui:       UI package changes" },
+    { "value": "config", "name": "config:   Configuration changes" }
+  ],
+  "allowCustomScopes": true,
+  "allowEmptyScopes": true
+}

@@ -1,0 +1,52 @@
+{
+  // 启用文件嵌套
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    // package.json 嵌套配置文件
+    "package.json": "pnpm-workspace.yaml, pnpm-lock.yaml, .npmrc, .nvmrc, turbo.json, biome.json, tsconfig.json, tsconfig.*.json, commitlint.config.*, .czrc, .gitignore, .gitattributes, .editorconfig, .env, .env.*, .lintstagedrc*",
+    // Dockerfile 嵌套 docker 相关
+    "Dockerfile": "docker-compose.yml, docker-compose.*.yml, .dockerignore",
+    // README 嵌套次要文档
+    "README.md": "CHANGELOG.md, LICENSE, CONTRIBUTING.md, CODE_OF_CONDUCT.md",
+    // 其他
+    "next.config.*": "next-env.d.ts"
+  },
+
+  // Biome 格式化
+  "editor.defaultFormatter": "biomejs.biome",
+  "editor.formatOnSave": true,
+  "[typescript]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "biomejs.biome"
+  },
+
+  // TypeScript
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+
+  // 搜索排除
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.turbo": true,
+    "**/.next": true,
+    "**/dist": true,
+    "**/coverage": true,
+    "pnpm-lock.yaml": true
+  },
+
+  // 文件排除（不在资源管理器显示）
+  "files.exclude": {
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/node_modules": false
+  }
+}
