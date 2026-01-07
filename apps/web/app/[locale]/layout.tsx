@@ -2,8 +2,27 @@ import { routing } from '@/lib/i18n/routing'
 import { AntdRegistry } from '@ant-design/nextjs-registry'
 import { NextIntlClientProvider } from 'next-intl'
 import { getMessages, setRequestLocale } from 'next-intl/server'
+import { JetBrains_Mono, Plus_Jakarta_Sans, Space_Grotesk } from 'next/font/google'
 import { notFound } from 'next/navigation'
 import { Providers } from './providers'
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  variable: '--font-body',
+  display: 'swap',
+})
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  variable: '--font-display',
+  display: 'swap',
+})
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  variable: '--font-mono',
+  display: 'swap',
+})
 
 type Props = {
   children: React.ReactNode
@@ -30,7 +49,9 @@ export default async function LocaleLayout({ children, params }: Props) {
 
   return (
     <html lang={locale} suppressHydrationWarning>
-      <body>
+      <body
+        className={`${plusJakartaSans.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable}`}
+      >
         <NextIntlClientProvider messages={messages}>
           <Providers locale={locale}>
             <AntdRegistry>{children}</AntdRegistry>

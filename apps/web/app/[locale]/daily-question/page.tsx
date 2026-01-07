@@ -6,23 +6,22 @@ import { Link } from '@/lib/i18n/routing'
 import { trpc } from '@/lib/trpc/client'
 import {
   ArrowLeftOutlined,
-  CheckCircleOutlined,
   QuestionCircleOutlined,
   SettingOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons'
 import {
+  App,
   Button,
   Card,
   Drawer,
+  Empty,
   Form,
   Input,
-  List,
   Radio,
   Tag,
   Tooltip,
   Typography,
-  message,
 } from 'antd'
 import dayjs from 'dayjs'
 import dayOfYear from 'dayjs/plugin/dayOfYear'
@@ -58,32 +57,21 @@ interface AIConfig {
 }
 
 export default function DailyQuestionPage() {
+  const { message } = App.useApp()
   const t = useTranslations('dailyQuestion')
   const tCommon = useTranslations('common')
 
   const todayIndex = dayjs().dayOfYear() % SAMPLE_QUESTIONS.length
-  const fallbackQuestion = SAMPLE_QUESTIONS[todayIndex]
+  const fallbackQuestion =
+    SAMPLE_QUESTIONS[todayIndex] ?? SAMPLE_QUESTIONS[0] ?? '今天最让你感到有成就感的事情是什么？'
 
   const [answer, setAnswer] = useState('')
-  const [isAnswered, setIsAnswered] = useState(false)
-  const [todayQuestion, setTodayQuestion] = useState(fallbackQuestion)
+  const [todayQuestion, setTodayQuestion] = useState<string>(fallbackQuestion)
   const [questionId, setQuestionId] = useState<string | null>(null)
-  const [history, setHistory] = useState<AnswerHistory[]>([
-    {
-      id: '1',
-      date: dayjs().subtract(1, 'day').format('YYYY-MM-DD'),
-      question: '如果你知道不会失败，你会尝试什么？',
-      answer:
-        '我会尝试创业，做一个帮助人们更好地管理时间和生活的产品。虽然有风险，但如果不会失败的话，这是我最想做的事情。',
-    },
-    {
-      id: '2',
-      date: dayjs().subtract(2, 'day').format('YYYY-MM-DD'),
-      question: '今天有什么值得感恩的小事？',
-      answer: '感恩早晨喝到了一杯好咖啡，感恩和朋友有一次愉快的聊天，感恩天气很好可以出去走走。',
-    },
-  ])
+  const [history, setHistory] = useState<AnswerHistory[]>([])
   const [isApiAvailable, setIsApiAvailable] = useState(true)
+  const [editingHistoryId, setEditingHistoryId] = useState<string | null>(null)
+  const [editingHistoryAnswer, setEditingHistoryAnswer] = useState('')
 
   // AI Config
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -105,73 +93,103 @@ export default function DailyQuestionPage() {
   }, [settingsForm])
 
   // tRPC queries
-  const todayQuestionQuery = trpc.dailyQuestion.getTodayQuestion.useQuery(
+  // @ts-expect-error - tRPC v11 RC type compatibility
+  const randomQuestionQuery = trpc.dailyQuestion.getRandomQuestion.useQuery(
     { userId: DEMO_USER_ID },
-    {
-      enabled: isApiAvailable,
-      retry: 1,
-    }
+    { retry: 2 }
   )
 
+  // @ts-expect-error - tRPC v11 RC type compatibility
   const historyQuery = trpc.dailyQuestion.getAnswerHistory.useQuery(
     { userId: DEMO_USER_ID, limit: 30 },
-    {
-      enabled: isApiAvailable,
-      retry: 1,
-    }
+    { retry: 2 }
   )
 
   // tRPC mutations
-  const answerMutation = trpc.dailyQuestion.answerQuestion.useMutation({
-    onSuccess: () => {
-      setIsAnswered(true)
-      message.success('回答已保存')
+  // @ts-expect-error - tRPC v11 RC type compatibility
+  const answerMutation = trpc.dailyQuestion.answerQuestionNew.useMutation()
 
-      const newAnswer: AnswerHistory = {
-        id: `${Date.now()}`,
-        date: dayjs().format('YYYY-MM-DD'),
-        question: todayQuestion,
-        answer: answer.trim(),
+  // @ts-expect-error - tRPC v11 RC type compatibility
+  const generateAIMutation = trpc.dailyQuestion.generateAIQuestions.useMutation()
+
+  // Handle mutation results
+  // biome-ignore lint/correctness/useExhaustiveDependencies: message and getNextQuestion are stable refs
+  useEffect(() => {
+    if (answerMutation.data) {
+      const data = answerMutation.data as {
+        id: string
+        date: Date
+        question: { question: string }
+        answer: string
       }
-      setHistory((prev) => [newAnswer, ...prev.filter((h) => h.date !== newAnswer.date)])
-    },
-    onError: () => {
-      setIsApiAvailable(false)
-      handleLocalSubmit()
-    },
-  })
+      // Add to local history immediately using the returned data
+      const newAnswer: AnswerHistory = {
+        id: data.id,
+        date: dayjs(data.date).format('YYYY-MM-DD HH:mm'),
+        question: data.question.question,
+        answer: data.answer,
+      }
+      setHistory((prev) => [newAnswer, ...prev])
+      setAnswer('')
+      message.success('回答已保存')
+      // Get next question
+      getNextQuestion()
+    }
+    if (answerMutation.error) {
+      message.error('保存失败，请重试')
+    }
+  }, [answerMutation.data, answerMutation.error])
 
-  const generateAIMutation = trpc.dailyQuestion.generateAIQuestions.useMutation({
-    onSuccess: (data) => {
+  // biome-ignore lint/correctness/useExhaustiveDependencies: message is a stable ref
+  useEffect(() => {
+    if (generateAIMutation.data) {
+      const data = generateAIMutation.data as { count: number }
       message.success(`成功生成 ${data.count} 个问题`)
-    },
-    onError: (error) => {
+    }
+    if (generateAIMutation.error) {
+      const error = generateAIMutation.error as { message: string }
       message.error(`生成失败: ${error.message}`)
-    },
-  })
+    }
+  }, [generateAIMutation.data, generateAIMutation.error])
 
   // Sync API data to local state
   useEffect(() => {
-    if (todayQuestionQuery.data) {
-      setTodayQuestion(todayQuestionQuery.data.question.question)
-      setQuestionId(todayQuestionQuery.data.questionId)
-      if (todayQuestionQuery.data.answer) {
-        setAnswer(todayQuestionQuery.data.answer)
-        setIsAnswered(true)
+    if (randomQuestionQuery.data) {
+      const data = randomQuestionQuery.data as {
+        id: string
+        question: string
+        category: string | null
       }
+      setTodayQuestion(data.question)
+      setQuestionId(data.id)
+      setIsApiAvailable(true)
     }
-  }, [todayQuestionQuery.data])
+    if (randomQuestionQuery.error) {
+      setIsApiAvailable(false)
+    }
+  }, [randomQuestionQuery.data, randomQuestionQuery.error])
 
   useEffect(() => {
-    if (historyQuery.data && historyQuery.data.length > 0) {
-      setHistory(
-        historyQuery.data.map((h) => ({
-          id: h.id,
-          date: dayjs(h.date).format('YYYY-MM-DD'),
-          question: h.question.question,
-          answer: h.answer,
-        }))
-      )
+    if (historyQuery.data) {
+      const data = historyQuery.data as Array<{
+        id: string
+        date: Date
+        question: { question: string }
+        answer: string
+      }>
+      const apiHistory = data.map((h) => ({
+        id: h.id,
+        date: dayjs(h.date).format('YYYY-MM-DD HH:mm'),
+        question: h.question.question,
+        answer: h.answer,
+      }))
+      // Merge with existing local history (avoid duplicates by id)
+      setHistory((prev) => {
+        // Keep local entries that aren't in API yet, plus all API entries
+        const apiIds = new Set(apiHistory.map((h) => h.id))
+        const localOnly = prev.filter((h) => !apiIds.has(h.id))
+        return [...localOnly, ...apiHistory]
+      })
     }
   }, [historyQuery.data])
 
@@ -183,12 +201,14 @@ export default function DailyQuestionPage() {
 
     const newAnswer: AnswerHistory = {
       id: `${Date.now()}`,
-      date: dayjs().format('YYYY-MM-DD'),
+      date: dayjs().format('YYYY-MM-DD HH:mm'),
       question: todayQuestion,
       answer: answer.trim(),
     }
-    setHistory([newAnswer, ...history.filter((h) => h.date !== newAnswer.date)])
-    setIsAnswered(true)
+    setHistory([newAnswer, ...history])
+    setAnswer('')
+    // Get next question
+    getNextQuestion()
     message.success('回答已保存')
   }
 
@@ -198,15 +218,30 @@ export default function DailyQuestionPage() {
       return
     }
 
-    if (isApiAvailable && questionId) {
-      answerMutation.mutate({
-        userId: DEMO_USER_ID,
-        questionId,
-        answer: answer.trim(),
-      })
-    } else {
+    if (!questionId) {
+      // Fallback to local submit
       handleLocalSubmit()
+      return
     }
+
+    answerMutation.mutate({
+      userId: DEMO_USER_ID,
+      questionId,
+      answer: answer.trim(),
+    })
+  }
+
+  const getNextQuestion = () => {
+    // Get a random question from the sample questions, excluding the current one
+    const availableQuestions = SAMPLE_QUESTIONS.filter((q) => q !== todayQuestion)
+    const nextQuestion =
+      availableQuestions[Math.floor(Math.random() * availableQuestions.length)] ??
+      SAMPLE_QUESTIONS[0] ??
+      '今天最让你感到有成就感的事情是什么？'
+    setTodayQuestion(nextQuestion)
+    setQuestionId(null)
+    // Try to fetch from API
+    randomQuestionQuery.refetch()
   }
 
   const handleSaveSettings = (values: AIConfig) => {
@@ -227,6 +262,29 @@ export default function DailyQuestionPage() {
       count: 5,
       aiConfig,
     })
+  }
+
+  const handleEditHistory = (item: AnswerHistory) => {
+    setEditingHistoryId(item.id)
+    setEditingHistoryAnswer(item.answer)
+  }
+
+  const handleSaveHistoryEdit = (item: AnswerHistory) => {
+    if (!editingHistoryAnswer.trim()) {
+      message.warning('回答不能为空')
+      return
+    }
+    setHistory((prev) =>
+      prev.map((h) => (h.id === item.id ? { ...h, answer: editingHistoryAnswer.trim() } : h))
+    )
+    setEditingHistoryId(null)
+    setEditingHistoryAnswer('')
+    message.success('已保存')
+  }
+
+  const handleCancelHistoryEdit = () => {
+    setEditingHistoryId(null)
+    setEditingHistoryAnswer('')
   }
 
   return (
@@ -265,75 +323,121 @@ export default function DailyQuestionPage() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-2xl">
-        {/* Today's Question */}
-        <Card
-          className="mb-6"
-          title={
-            <div className="flex items-center gap-2">
-              <QuestionCircleOutlined className="text-purple-500" />
-              <span>{t('todayQuestion')}</span>
-              <Text type="secondary" className="ml-auto text-sm font-normal">
-                {dayjs().format('YYYY-MM-DD')}
-              </Text>
-            </div>
-          }
-        >
-          <Paragraph className="mb-4 text-lg">{todayQuestion}</Paragraph>
-
-          {isAnswered ? (
-            <div className="rounded-lg bg-green-50 p-4 dark:bg-green-900/20">
-              <div className="mb-2 flex items-center gap-2 text-green-600">
-                <CheckCircleOutlined />
-                <Text strong className="text-green-600">
-                  {t('answered')}
+      <div className="mx-auto max-w-6xl flex gap-6">
+        {/* Left: Today's Question */}
+        <div className="flex-1">
+          <Card
+            className="mb-6"
+            loading={randomQuestionQuery.isLoading}
+            title={
+              <div className="flex items-center gap-2">
+                <QuestionCircleOutlined className="text-purple-500" />
+                <span>{t('todayQuestion')}</span>
+                <Text type="secondary" className="ml-auto text-sm font-normal">
+                  {dayjs().format('YYYY-MM-DD')}
                 </Text>
               </div>
-              <Paragraph className="!mb-0">{answer}</Paragraph>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <Text strong className="mb-2 block">
-                  {t('yourAnswer')}
-                </Text>
-                <TextArea
-                  rows={4}
-                  placeholder={t('answerPlaceholder')}
-                  value={answer}
-                  onChange={(e) => setAnswer(e.target.value)}
-                  className="resize-none"
-                />
+            }
+          >
+            {randomQuestionQuery.error ? (
+              <div className="text-center py-4">
+                <Text type="danger">加载问题失败，请检查网络连接</Text>
+                <br />
+                <Button type="link" onClick={() => randomQuestionQuery.refetch()} className="mt-2">
+                  重试
+                </Button>
               </div>
-              <Button type="primary" onClick={handleSubmit} loading={answerMutation.isPending}>
-                {t('submitAnswer')}
-              </Button>
-            </div>
-          )}
-        </Card>
+            ) : (
+              <>
+                <Paragraph className="mb-4 text-lg">{todayQuestion}</Paragraph>
 
-        {/* Answer History */}
-        <Card title={t('history')}>
-          <List
-            dataSource={history}
-            renderItem={(item) => (
-              <List.Item className="!block !px-0">
-                <div className="mb-1 flex items-center justify-between">
-                  <Text type="secondary" className="text-sm">
-                    {item.date}
-                  </Text>
+                <div className="space-y-4">
+                  <div>
+                    <Text strong className="mb-2 block">
+                      {t('yourAnswer')}
+                    </Text>
+                    <TextArea
+                      rows={4}
+                      placeholder={t('answerPlaceholder')}
+                      value={answer}
+                      onChange={(e) => setAnswer(e.target.value)}
+                      className="resize-none"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      type="primary"
+                      onClick={handleSubmit}
+                      loading={answerMutation.isPending}
+                    >
+                      {t('submitAnswer')}
+                    </Button>
+                    <Button onClick={getNextQuestion}>换一个问题</Button>
+                  </div>
                 </div>
-                <Text strong className="mb-2 block text-purple-600">
-                  {item.question}
-                </Text>
-                <Paragraph className="!mb-0 text-gray-600 dark:text-gray-400">
-                  {item.answer}
-                </Paragraph>
-              </List.Item>
+              </>
             )}
-            locale={{ emptyText: tCommon('noData') }}
-          />
-        </Card>
+          </Card>
+        </div>
+
+        {/* Right: Answer History */}
+        <div className="w-80 shrink-0">
+          <Card
+            title={t('history')}
+            loading={historyQuery.isLoading}
+            className="sticky top-6"
+            styles={{ body: { maxHeight: 'calc(100vh - 180px)', overflowY: 'auto' } }}
+          >
+            {history.length === 0 ? (
+              <Empty description={tCommon('noData')} />
+            ) : (
+              <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                {history.map((item) => (
+                  <div key={item.id} className="py-3 first:pt-0 last:pb-0">
+                    <div className="mb-1">
+                      <Text type="secondary" className="text-xs">
+                        {item.date}
+                      </Text>
+                    </div>
+                    <Text strong className="mb-1 block text-purple-600 text-sm">
+                      {item.question}
+                    </Text>
+                    {editingHistoryId === item.id ? (
+                      <div className="space-y-2">
+                        <TextArea
+                          rows={3}
+                          value={editingHistoryAnswer}
+                          onChange={(e) => setEditingHistoryAnswer(e.target.value)}
+                          className="resize-none text-sm"
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            type="primary"
+                            size="small"
+                            onClick={() => handleSaveHistoryEdit(item)}
+                          >
+                            保存
+                          </Button>
+                          <Button size="small" onClick={handleCancelHistoryEdit}>
+                            取消
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        className="text-sm text-gray-600 dark:text-gray-400 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded p-1 -m-1 transition-colors text-left w-full"
+                        onClick={() => handleEditHistory(item)}
+                      >
+                        {item.answer}
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        </div>
       </div>
 
       {/* AI Settings Drawer */}
@@ -341,7 +445,7 @@ export default function DailyQuestionPage() {
         title="AI 配置"
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
-        width={400}
+        styles={{ wrapper: { width: 400 } }}
       >
         <Form form={settingsForm} layout="vertical" onFinish={handleSaveSettings}>
           <Form.Item

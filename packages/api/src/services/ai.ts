@@ -42,6 +42,9 @@ export class AIService {
    */
   async generateQuestion(category?: string): Promise<GeneratedQuestion> {
     const questions = await this.generateQuestions(1, category ? [category] : undefined)
+    if (!questions[0]) {
+      throw new Error('Failed to generate question')
+    }
     return questions[0]
   }
 

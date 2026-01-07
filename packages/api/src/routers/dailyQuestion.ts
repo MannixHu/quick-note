@@ -55,6 +55,68 @@ export const dailyQuestionRouter = createTRPCRouter({
     return { message: 'Questions seeded successfully', count: SAMPLE_QUESTIONS.length }
   }),
 
+  // Get a random question (not tied to daily limit)
+  getRandomQuestion: publicProcedure
+    .input(z.object({ userId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      // Get recently answered question IDs to avoid repetition
+      const recentAnswers = await ctx.prisma.questionAnswer.findMany({
+        where: { userId: input.userId },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        select: { questionId: true },
+      })
+
+      const excludeIds = recentAnswers.map((a) => a.questionId)
+
+      // Find questions not recently answered
+      const availableQuestions = await ctx.prisma.dailyQuestion.findMany({
+        where: {
+          id: { notIn: excludeIds.length > 0 ? excludeIds : undefined },
+        },
+      })
+
+      // If all questions have been used, get any random one
+      const questions =
+        availableQuestions.length > 0
+          ? availableQuestions
+          : await ctx.prisma.dailyQuestion.findMany()
+
+      if (questions.length === 0) {
+        return null
+      }
+
+      const randomIndex = Math.floor(Math.random() * questions.length)
+      const randomQuestion = questions[randomIndex]
+      return randomQuestion ?? null
+    }),
+
+  // Answer a question (create new record each time)
+  answerQuestionNew: publicProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        questionId: z.string(),
+        answer: z.string().min(1),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Create a new answer record (no upsert, allows multiple answers)
+      const result = await ctx.prisma.questionAnswer.create({
+        data: {
+          userId: input.userId,
+          questionId: input.questionId,
+          answer: input.answer,
+          date: new Date(),
+        },
+        include: {
+          question: true,
+        },
+      })
+
+      return result
+    }),
+
   // Get today's question for a user
   getTodayQuestion: publicProcedure
     .input(z.object({ userId: z.string() }))
@@ -103,7 +165,11 @@ export const dailyQuestionRouter = createTRPCRouter({
           return null
         }
 
-        const randomQuestion = questions[Math.floor(Math.random() * questions.length)]
+        const randomIndex = Math.floor(Math.random() * questions.length)
+        const randomQuestion = questions[randomIndex]
+        if (!randomQuestion) {
+          return null
+        }
 
         userDailyQuestion = await ctx.prisma.userDailyQuestion.create({
           data: {
@@ -384,7 +450,11 @@ export const dailyQuestionRouter = createTRPCRouter({
           throw new Error('No questions available in database')
         }
 
-        const randomQuestion = questions[Math.floor(Math.random() * questions.length)]
+        const randomIndex = Math.floor(Math.random() * questions.length)
+        const randomQuestion = questions[randomIndex]
+        if (!randomQuestion) {
+          throw new Error('Failed to select random question')
+        }
         newQuestion = {
           question: randomQuestion.question,
           category: randomQuestion.category || 'reflection',

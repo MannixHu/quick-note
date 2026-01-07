@@ -4,7 +4,7 @@ import type { Locale } from '@/lib/i18n/config'
 import { trpc } from '@/lib/trpc/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { httpBatchLink } from '@trpc/client'
-import { ConfigProvider, theme as antdTheme } from 'antd'
+import { App, ConfigProvider, theme as antdTheme } from 'antd'
 import enUS from 'antd/locale/en_US'
 import zhCN from 'antd/locale/zh_CN'
 import { ThemeProvider, useTheme } from 'next-themes'
@@ -50,7 +50,7 @@ function AntdConfigProvider({
         },
       }}
     >
-      {children}
+      <App>{children}</App>
     </ConfigProvider>
   )
 }
