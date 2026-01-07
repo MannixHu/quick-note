@@ -30,6 +30,7 @@
 包管理: pnpm 9 + Turborepo
 数据库: PostgreSQL + Prisma ORM
 API: tRPC (端到端类型安全)
+AI: OpenRouter / DeepSeek (每日问题生成)
 状态: Zustand + TanStack Query
 UI: Ant Design (Web) + React Native Paper (Mobile)
 样式: Tailwind CSS + NativeWind
@@ -263,10 +264,80 @@ DATABASE_URL=postgresql://user:pass@localhost:5432/db
 NEXTAUTH_SECRET=your-secret
 NEXTAUTH_URL=http://localhost:3000
 
+# AI Provider (可选 - 用于每日问题生成)
+AI_PROVIDER=openrouter  # 或 deepseek
+OPENROUTER_API_KEY=your-key  # 如果使用 OpenRouter
+DEEPSEEK_API_KEY=your-key    # 如果使用 DeepSeek
+AI_MODEL=anthropic/claude-3.5-sonnet  # 可选，指定模型
+
 # 可选
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 ```
+
+## AI 每日问题生成
+
+项目支持使用 AI 自动生成深度思考问题，替代预设的问题库。
+
+### 配置 AI 服务
+
+1. **选择提供商**
+
+   - **OpenRouter** (推荐) - 一个 API 访问所有模型（Claude, GPT-4, etc.）
+     - 注册: https://openrouter.ai
+     - 获取 API Key，设置 `OPENROUTER_API_KEY`
+
+   - **DeepSeek** - 国产高性价比模型
+     - 注册: https://platform.deepseek.com
+     - 获取 API Key，设置 `DEEPSEEK_API_KEY`
+
+2. **配置环境变量**
+
+   ```bash
+   # .env 文件
+   AI_PROVIDER="openrouter"
+   OPENROUTER_API_KEY="your-api-key-here"
+
+   # 可选: 指定模型（默认 anthropic/claude-3.5-sonnet）
+   AI_MODEL="anthropic/claude-3.5-sonnet"
+   ```
+
+### API 使用方法
+
+```typescript
+// 1. 检查 AI 服务状态
+const status = await trpc.dailyQuestion.checkAIStatus.query()
+// { configured: true, provider: 'openrouter', model: 'anthropic/claude-3.5-sonnet' }
+
+// 2. 批量生成问题到数据库
+const result = await trpc.dailyQuestion.generateAIQuestions.mutate({
+  count: 10,  // 生成 10 个问题
+  categories: ['reflection', 'growth']  // 可选，指定类别
+})
+// { success: true, count: 10, questions: [...] }
+
+// 3. 获取今日问题（支持 AI 个性化）
+const todayQ = await trpc.dailyQuestion.getTodayQuestionWithAI.query({
+  userId: 'user_xxx',
+  usePersonalization: true  // 基于用户历史回答生成个性化问题
+})
+// { question: {...}, source: 'ai' | 'database' }
+```
+
+### 工作机制
+
+1. **降级策略**: AI 未配置或失败时，自动降级到数据库预设问题
+2. **个性化**: 基于用户最近 5 次回答历史，生成针对性问题
+3. **去重**: AI 生成的问题自动保存到数据库，避免重复
+4. **成本优化**: 只在需要时调用 AI，已有问题直接从数据库读取
+
+### 费用参考
+
+- **OpenRouter**: Claude 3.5 Sonnet 约 $3/百万 token
+- **DeepSeek**: deepseek-chat 约 ¥0.1/百万 token
+
+生成一个问题约消耗 500 tokens，成本极低。
+
 
 ## AI 开发注意事项
 

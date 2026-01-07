@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { createAIService } from '../services/ai'
 import { createTRPCRouter, publicProcedure } from '../trpc'
 
 // Sample thought-provoking questions
@@ -217,4 +218,217 @@ export const dailyQuestionRouter = createTRPCRouter({
         data: input,
       })
     }),
+
+  // ============================================
+  // AI-Generated Questions
+  // ============================================
+
+  /**
+   * 使用 AI 生成新问题并保存到数据库
+   * 需要配置 AI_PROVIDER 和对应的 API Key
+   */
+  generateAIQuestions: publicProcedure
+    .input(
+      z.object({
+        count: z.number().min(1).max(20).default(5),
+        categories: z.array(z.string()).optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const aiService = createAIService()
+
+      if (!aiService) {
+        throw new Error(
+          'AI service not configured. Please set AI_PROVIDER and corresponding API key in environment variables.'
+        )
+      }
+
+      try {
+        // 使用 AI 生成问题
+        const generatedQuestions = await aiService.generateQuestions(input.count, input.categories)
+
+        // 保存到数据库
+        const created = await ctx.prisma.dailyQuestion.createMany({
+          data: generatedQuestions,
+          skipDuplicates: true,
+        })
+
+        return {
+          success: true,
+          count: created.count,
+          questions: generatedQuestions,
+        }
+      } catch (error) {
+        console.error('AI generation error:', error)
+        throw new Error(`Failed to generate AI questions: ${(error as Error).message}`)
+      }
+    }),
+
+  /**
+   * 为用户生成个性化的今日问题（基于历史回答）
+   * 如果 AI 未配置或失败，降级到数据库随机问题
+   */
+  getTodayQuestionWithAI: publicProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        usePersonalization: z.boolean().default(false),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+
+      // 检查是否已有今日问题
+      let userDailyQuestion = await ctx.prisma.userDailyQuestion.findUnique({
+        where: {
+          userId_date: {
+            userId: input.userId,
+            date: today,
+          },
+        },
+        include: {
+          question: true,
+        },
+      })
+
+      if (userDailyQuestion) {
+        // 已有问题，直接返回
+        const answer = await ctx.prisma.questionAnswer.findUnique({
+          where: {
+            userId_questionId_date: {
+              userId: input.userId,
+              questionId: userDailyQuestion.questionId,
+              date: today,
+            },
+          },
+        })
+
+        return {
+          ...userDailyQuestion,
+          answer: answer?.answer || null,
+          source: 'existing' as const,
+        }
+      }
+
+      // 尝试使用 AI 生成个性化问题
+      const aiService = createAIService()
+      let newQuestion: { question: string; category: string } | null = null
+      let source: 'ai' | 'database' = 'database'
+
+      if (aiService && input.usePersonalization) {
+        try {
+          // 获取用户最近的回答历史
+          const answerHistory = await ctx.prisma.questionAnswer.findMany({
+            where: { userId: input.userId },
+            include: { question: true },
+            orderBy: { date: 'desc' },
+            take: 5,
+          })
+
+          if (answerHistory.length > 0) {
+            // 生成个性化问题
+            const generated = await aiService.generatePersonalizedQuestion(
+              answerHistory.map((a) => ({
+                question: a.question.question,
+                answer: a.answer,
+                date: a.date,
+              }))
+            )
+
+            newQuestion = generated
+            source = 'ai'
+          }
+        } catch (error) {
+          console.error('AI personalization failed, fallback to database:', error)
+        }
+      }
+
+      // 如果 AI 生成失败或未启用，从数据库随机选择
+      if (!newQuestion) {
+        const recentQuestionIds = await ctx.prisma.userDailyQuestion.findMany({
+          where: { userId: input.userId },
+          orderBy: { date: 'desc' },
+          take: 10,
+          select: { questionId: true },
+        })
+
+        const excludeIds = recentQuestionIds.map((q) => q.questionId)
+
+        const availableQuestions = await ctx.prisma.dailyQuestion.findMany({
+          where: {
+            id: { notIn: excludeIds.length > 0 ? excludeIds : undefined },
+          },
+        })
+
+        const questions =
+          availableQuestions.length > 0
+            ? availableQuestions
+            : await ctx.prisma.dailyQuestion.findMany()
+
+        if (questions.length === 0) {
+          throw new Error('No questions available in database')
+        }
+
+        const randomQuestion = questions[Math.floor(Math.random() * questions.length)]
+        newQuestion = {
+          question: randomQuestion.question,
+          category: randomQuestion.category || 'reflection',
+        }
+      }
+
+      // 如果是 AI 生成的，先保存到数据库
+      let questionRecord: { id: string; question: string; category: string | null }
+      if (source === 'ai') {
+        questionRecord = await ctx.prisma.dailyQuestion.create({
+          data: {
+            question: newQuestion.question,
+            category: newQuestion.category,
+          },
+        })
+      } else {
+        // 从数据库查询已有问题
+        const found = await ctx.prisma.dailyQuestion.findFirst({
+          where: { question: newQuestion.question },
+        })
+        if (!found) {
+          throw new Error('Question not found in database')
+        }
+        questionRecord = found
+      }
+
+      // 创建用户每日问题记录
+      userDailyQuestion = await ctx.prisma.userDailyQuestion.create({
+        data: {
+          userId: input.userId,
+          questionId: questionRecord.id,
+          date: today,
+        },
+        include: {
+          question: true,
+        },
+      })
+
+      return {
+        ...userDailyQuestion,
+        answer: null,
+        source,
+      }
+    }),
+
+  /**
+   * 检查 AI 服务状态
+   */
+  checkAIStatus: publicProcedure.query(() => {
+    const provider = process.env.AI_PROVIDER
+    const hasKey =
+      (provider === 'openrouter' && !!process.env.OPENROUTER_API_KEY) ||
+      (provider === 'deepseek' && !!process.env.DEEPSEEK_API_KEY)
+
+    return {
+      configured: !!provider && hasKey,
+      provider: provider || 'none',
+      model: process.env.AI_MODEL || 'default',
+    }
+  }),
 })
