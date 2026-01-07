@@ -4,23 +4,38 @@ import { LanguageSwitcher } from '@/components/language-switcher'
 import { ThemeSwitcher } from '@/components/theme-switcher'
 import { Link } from '@/lib/i18n/routing'
 import { trpc } from '@/lib/trpc/client'
-import { ArrowLeftOutlined, CheckCircleOutlined, QuestionCircleOutlined } from '@ant-design/icons'
-import { Button, Card, Input, List, Tag, Typography, message } from 'antd'
+import {
+  ArrowLeftOutlined,
+  CheckCircleOutlined,
+  QuestionCircleOutlined,
+  SettingOutlined,
+  ThunderboltOutlined,
+} from '@ant-design/icons'
+import {
+  Button,
+  Card,
+  Drawer,
+  Form,
+  Input,
+  List,
+  Radio,
+  Tag,
+  Tooltip,
+  Typography,
+  message,
+} from 'antd'
 import dayjs from 'dayjs'
 import dayOfYear from 'dayjs/plugin/dayOfYear'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 
-// Extend dayjs with dayOfYear plugin
 dayjs.extend(dayOfYear)
 
 const { Title, Text, Paragraph } = Typography
 const { TextArea } = Input
 
-// Demo user ID - in production this would come from auth context
 const DEMO_USER_ID = 'demo-user-123'
 
-// Sample questions for demo/fallback
 const SAMPLE_QUESTIONS = [
   '今天最让你感到有成就感的事情是什么？',
   '如果今天可以重来，你会做什么不同的选择？',
@@ -36,11 +51,16 @@ interface AnswerHistory {
   answer: string
 }
 
+interface AIConfig {
+  provider: 'openrouter' | 'deepseek'
+  apiKey: string
+  model?: string
+}
+
 export default function DailyQuestionPage() {
   const t = useTranslations('dailyQuestion')
   const tCommon = useTranslations('common')
 
-  // Get a "random" question based on today's date for fallback
   const todayIndex = dayjs().dayOfYear() % SAMPLE_QUESTIONS.length
   const fallbackQuestion = SAMPLE_QUESTIONS[todayIndex]
 
@@ -65,13 +85,31 @@ export default function DailyQuestionPage() {
   ])
   const [isApiAvailable, setIsApiAvailable] = useState(true)
 
+  // AI Config
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [aiConfig, setAiConfig] = useState<AIConfig | null>(null)
+  const [settingsForm] = Form.useForm()
+
+  // Load AI config from localStorage
+  useEffect(() => {
+    const savedConfig = localStorage.getItem('ai-config')
+    if (savedConfig) {
+      try {
+        const config = JSON.parse(savedConfig) as AIConfig
+        setAiConfig(config)
+        settingsForm.setFieldsValue(config)
+      } catch {
+        // ignore
+      }
+    }
+  }, [settingsForm])
+
   // tRPC queries
   const todayQuestionQuery = trpc.dailyQuestion.getTodayQuestion.useQuery(
     { userId: DEMO_USER_ID },
     {
       enabled: isApiAvailable,
       retry: 1,
-      onError: () => setIsApiAvailable(false),
     }
   )
 
@@ -80,7 +118,6 @@ export default function DailyQuestionPage() {
     {
       enabled: isApiAvailable,
       retry: 1,
-      onError: () => setIsApiAvailable(false),
     }
   )
 
@@ -90,7 +127,6 @@ export default function DailyQuestionPage() {
       setIsAnswered(true)
       message.success('回答已保存')
 
-      // Add to local history
       const newAnswer: AnswerHistory = {
         id: `${Date.now()}`,
         date: dayjs().format('YYYY-MM-DD'),
@@ -101,8 +137,16 @@ export default function DailyQuestionPage() {
     },
     onError: () => {
       setIsApiAvailable(false)
-      // Fallback: save locally
       handleLocalSubmit()
+    },
+  })
+
+  const generateAIMutation = trpc.dailyQuestion.generateAIQuestions.useMutation({
+    onSuccess: (data) => {
+      message.success(`成功生成 ${data.count} 个问题`)
+    },
+    onError: (error) => {
+      message.error(`生成失败: ${error.message}`)
     },
   })
 
@@ -137,7 +181,6 @@ export default function DailyQuestionPage() {
       return
     }
 
-    // Add to history
     const newAnswer: AnswerHistory = {
       id: `${Date.now()}`,
       date: dayjs().format('YYYY-MM-DD'),
@@ -166,6 +209,26 @@ export default function DailyQuestionPage() {
     }
   }
 
+  const handleSaveSettings = (values: AIConfig) => {
+    setAiConfig(values)
+    localStorage.setItem('ai-config', JSON.stringify(values))
+    setSettingsOpen(false)
+    message.success('AI 配置已保存')
+  }
+
+  const handleGenerateQuestions = () => {
+    if (!aiConfig) {
+      message.warning('请先配置 AI API')
+      setSettingsOpen(true)
+      return
+    }
+
+    generateAIMutation.mutate({
+      count: 5,
+      aiConfig,
+    })
+  }
+
   return (
     <main className="min-h-screen p-6">
       {/* Header */}
@@ -182,6 +245,21 @@ export default function DailyQuestionPage() {
           {!isApiAvailable && <Tag color="orange">离线模式</Tag>}
         </div>
         <div className="flex items-center gap-2">
+          <Tooltip title="AI 生成问题">
+            <Button
+              icon={<ThunderboltOutlined />}
+              onClick={handleGenerateQuestions}
+              loading={generateAIMutation.isPending}
+              disabled={!aiConfig}
+            />
+          </Tooltip>
+          <Tooltip title="AI 设置">
+            <Button
+              icon={<SettingOutlined />}
+              onClick={() => setSettingsOpen(true)}
+              type={aiConfig ? 'default' : 'primary'}
+            />
+          </Tooltip>
           <LanguageSwitcher />
           <ThemeSwitcher />
         </div>
@@ -227,7 +305,7 @@ export default function DailyQuestionPage() {
                   className="resize-none"
                 />
               </div>
-              <Button type="primary" onClick={handleSubmit} loading={answerMutation.isLoading}>
+              <Button type="primary" onClick={handleSubmit} loading={answerMutation.isPending}>
                 {t('submitAnswer')}
               </Button>
             </div>
@@ -257,6 +335,75 @@ export default function DailyQuestionPage() {
           />
         </Card>
       </div>
+
+      {/* AI Settings Drawer */}
+      <Drawer
+        title="AI 配置"
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        width={400}
+      >
+        <Form form={settingsForm} layout="vertical" onFinish={handleSaveSettings}>
+          <Form.Item
+            name="provider"
+            label="AI 服务商"
+            rules={[{ required: true, message: '请选择服务商' }]}
+          >
+            <Radio.Group>
+              <Radio.Button value="openrouter">OpenRouter</Radio.Button>
+              <Radio.Button value="deepseek">DeepSeek</Radio.Button>
+            </Radio.Group>
+          </Form.Item>
+
+          <Form.Item
+            name="apiKey"
+            label="API Key"
+            rules={[{ required: true, message: '请输入 API Key' }]}
+          >
+            <Input.Password placeholder="sk-..." />
+          </Form.Item>
+
+          <Form.Item name="model" label="模型 (可选)">
+            <Input placeholder="默认: Claude 3.5 / DeepSeek Chat" />
+          </Form.Item>
+
+          <Form.Item>
+            <Button type="primary" htmlType="submit" block>
+              保存配置
+            </Button>
+          </Form.Item>
+        </Form>
+
+        <div className="mt-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
+          <Text strong className="mb-2 block">
+            获取 API Key
+          </Text>
+          <div className="space-y-2 text-sm">
+            <div>
+              <Text type="secondary">OpenRouter: </Text>
+              <a
+                href="https://openrouter.ai/keys"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-500"
+              >
+                openrouter.ai/keys
+              </a>
+            </div>
+            <div>
+              <Text type="secondary">DeepSeek: </Text>
+              <a
+                href="https://platform.deepseek.com/api_keys"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-500"
+              >
+                platform.deepseek.com
+              </a>
+            </div>
+          </div>
+        </div>
+      </Drawer>
     </main>
   )
 }

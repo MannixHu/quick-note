@@ -225,21 +225,28 @@ export const dailyQuestionRouter = createTRPCRouter({
 
   /**
    * 使用 AI 生成新问题并保存到数据库
-   * 需要配置 AI_PROVIDER 和对应的 API Key
+   * 支持前端传入 AI 配置，或使用环境变量配置
    */
   generateAIQuestions: publicProcedure
     .input(
       z.object({
         count: z.number().min(1).max(20).default(5),
         categories: z.array(z.string()).optional(),
+        aiConfig: z
+          .object({
+            provider: z.enum(['openrouter', 'deepseek']),
+            apiKey: z.string(),
+            model: z.string().optional(),
+          })
+          .optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const aiService = createAIService()
+      const aiService = createAIService(input.aiConfig)
 
       if (!aiService) {
         throw new Error(
-          'AI service not configured. Please set AI_PROVIDER and corresponding API key in environment variables.'
+          'AI service not configured. Please provide AI config or set environment variables.'
         )
       }
 
@@ -273,6 +280,13 @@ export const dailyQuestionRouter = createTRPCRouter({
       z.object({
         userId: z.string(),
         usePersonalization: z.boolean().default(false),
+        aiConfig: z
+          .object({
+            provider: z.enum(['openrouter', 'deepseek']),
+            apiKey: z.string(),
+            model: z.string().optional(),
+          })
+          .optional(),
       })
     )
     .query(async ({ ctx, input }) => {
@@ -312,7 +326,7 @@ export const dailyQuestionRouter = createTRPCRouter({
       }
 
       // 尝试使用 AI 生成个性化问题
-      const aiService = createAIService()
+      const aiService = createAIService(input.aiConfig)
       let newQuestion: { question: string; category: string } | null = null
       let source: 'ai' | 'database' = 'database'
 

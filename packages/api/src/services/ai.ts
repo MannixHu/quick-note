@@ -218,15 +218,25 @@ ${recentAnswers}
 
 /**
  * 创建 AI 服务实例的工厂函数
+ * @param customConfig 可选的自定义配置（从前端传入）
  */
-export function createAIService(): AIService | null {
-  const provider = process.env.AI_PROVIDER as 'openrouter' | 'deepseek' | undefined
+export function createAIService(customConfig?: {
+  provider?: string
+  apiKey?: string
+  model?: string
+}): AIService | null {
+  // 优先使用自定义配置，否则使用环境变量
+  const provider = (customConfig?.provider || process.env.AI_PROVIDER) as
+    | 'openrouter'
+    | 'deepseek'
+    | undefined
   const apiKey =
-    provider === 'openrouter'
+    customConfig?.apiKey ||
+    (provider === 'openrouter'
       ? process.env.OPENROUTER_API_KEY
       : provider === 'deepseek'
         ? process.env.DEEPSEEK_API_KEY
-        : undefined
+        : undefined)
 
   if (!provider || !apiKey) {
     console.warn('AI service not configured. Set AI_PROVIDER and corresponding API key.')
@@ -236,6 +246,6 @@ export function createAIService(): AIService | null {
   return new AIService({
     provider,
     apiKey,
-    model: process.env.AI_MODEL,
+    model: customConfig?.model || process.env.AI_MODEL,
   })
 }
