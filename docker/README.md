@@ -70,3 +70,4 @@ docker pull mailhog/mailhog:latest
 - 阿里云：需要登录后获取个人加速地址
 - 腾讯云：需要登录后获取个人加速地址
 
+
