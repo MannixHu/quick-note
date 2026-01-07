@@ -2,15 +2,37 @@
 
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { ThemeSwitcher } from '@/components/theme-switcher'
-import { Link } from '@/lib/i18n/routing'
-import { ClockCircleOutlined, QuestionCircleOutlined, SyncOutlined } from '@ant-design/icons'
-import { Button, Card, Typography } from 'antd'
+import { Link, useRouter } from '@/lib/i18n/routing'
+import {
+  ClockCircleOutlined,
+  LogoutOutlined,
+  QuestionCircleOutlined,
+  SyncOutlined,
+} from '@ant-design/icons'
+import { Button, Card, Typography, message } from 'antd'
 import { useTranslations } from 'next-intl'
+import { useEffect, useState } from 'react'
 
 const { Title, Paragraph, Text } = Typography
 
 export default function HomePage() {
   const t = useTranslations('home')
+  const router = useRouter()
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+
+  useEffect(() => {
+    // Check if user is logged in
+    const user = localStorage.getItem('user')
+    setIsLoggedIn(!!user)
+  }, [])
+
+  const handleLogout = () => {
+    localStorage.removeItem('user')
+    document.cookie = 'auth-token=; path=/; max-age=0'
+    setIsLoggedIn(false)
+    message.success('已退出登录')
+    router.push('/')
+  }
 
   const features = [
     {
@@ -39,6 +61,7 @@ export default function HomePage() {
       <header className="absolute right-4 top-4 flex items-center gap-2">
         <LanguageSwitcher />
         <ThemeSwitcher />
+        {isLoggedIn && <Button type="text" icon={<LogoutOutlined />} onClick={handleLogout} />}
       </header>
 
       {/* Hero Section */}

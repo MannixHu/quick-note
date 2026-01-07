@@ -34,6 +34,7 @@
     "login": "Login",
     "register": "Register",
     "logout": "Logout",
+    "name": "Name",
     "email": "Email",
     "password": "Password",
     "confirmPassword": "Confirm Password",
