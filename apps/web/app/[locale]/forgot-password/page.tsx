@@ -41,13 +41,13 @@ export default function ForgotPasswordPage() {
       />
 
       {/* Header */}
-      <header className="absolute right-6 top-6 z-20 flex items-center gap-3">
+      <header className="absolute right-4 md:right-6 top-4 md:top-6 z-20 flex items-center gap-2 md:gap-3">
         <LanguageSwitcher />
         <ThemeSwitcher />
       </header>
 
       {/* Back button */}
-      <Link href="/login" className="absolute left-6 top-6 z-20">
+      <Link href="/login" className="absolute left-4 md:left-6 top-4 md:top-6 z-20">
         <Button
           type="text"
           icon={<ArrowLeftOutlined />}

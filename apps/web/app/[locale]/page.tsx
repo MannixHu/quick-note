@@ -56,9 +56,9 @@ export default function HomePage() {
       <div className="absolute inset-0 gradient-mesh opacity-50" />
 
       {/* Header */}
-      <header className="relative z-20 flex items-center justify-between px-6 py-4">
+      <header className="relative z-20 flex items-center justify-between px-4 md:px-6 py-4">
         <div className="font-display text-xl font-bold gradient-text">快记</div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3">
           <LanguageSwitcher />
           <ThemeSwitcher />
           {isLoggedIn && (
@@ -75,10 +75,10 @@ export default function HomePage() {
       </header>
 
       {/* Main Content */}
-      <div className="relative flex min-h-[calc(100vh-80px)] flex-col items-center justify-center px-6 py-12">
+      <div className="relative flex min-h-[calc(100vh-80px)] flex-col items-center justify-center px-4 md:px-6 py-8 md:py-12">
         {/* Welcome text */}
-        <div className="mb-12 text-center">
-          <h1 className="font-display text-4xl font-bold text-gray-900 dark:text-white md:text-5xl">
+        <div className="mb-8 md:mb-12 text-center">
+          <h1 className="font-display text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white md:text-5xl">
             {isLoggedIn ? '欢迎回来' : t('title')}
           </h1>
           <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">
@@ -87,12 +87,12 @@ export default function HomePage() {
         </div>
 
         {/* Module Cards - Quick Access */}
-        <div className="grid w-full max-w-3xl gap-6 md:grid-cols-2">
+        <div className="grid w-full max-w-3xl gap-4 md:gap-6 md:grid-cols-2">
           {modules.map((module) => (
             <Link key={module.href} href={module.href} className="block">
               <div
                 className={
-                  'group relative h-full overflow-hidden rounded-2xl glass p-8 transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] cursor-pointer border-2 border-transparent hover:border-primary-500/30'
+                  'group relative h-full overflow-hidden rounded-2xl glass p-6 md:p-8 transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] cursor-pointer border-2 border-transparent hover:border-primary-500/30'
                 }
               >
                 {/* Gradient background on hover */}
@@ -102,13 +102,13 @@ export default function HomePage() {
 
                 {/* Icon */}
                 <div
-                  className={`mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl ${module.bgColor} ${module.iconColor} transition-all duration-300 group-hover:scale-110`}
+                  className={`mb-4 md:mb-6 inline-flex h-12 w-12 md:h-16 md:w-16 items-center justify-center rounded-xl md:rounded-2xl ${module.bgColor} ${module.iconColor} transition-all duration-300 group-hover:scale-110`}
                 >
                   {module.icon}
                 </div>
 
                 {/* Content */}
-                <h2 className="mb-3 font-display text-2xl font-bold text-gray-900 dark:text-white">
+                <h2 className="mb-2 md:mb-3 font-display text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
                   {module.title}
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
@@ -116,7 +116,7 @@ export default function HomePage() {
                 </p>
 
                 {/* Click hint */}
-                <div className="mt-6 flex items-center text-sm font-medium text-primary-600 dark:text-primary-400">
+                <div className="mt-4 md:mt-6 flex items-center text-sm font-medium text-primary-600 dark:text-primary-400">
                   点击进入
                   <svg
                     className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1"
@@ -140,7 +140,7 @@ export default function HomePage() {
 
         {/* Login hint for non-logged users */}
         {!isLoggedIn && (
-          <div className="mt-12 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+          <div className="mt-8 md:mt-12 flex items-center gap-3 md:gap-4 text-sm text-gray-500 dark:text-gray-400">
             <span>还没有账号？</span>
             <Link
               href="/login"

@@ -1,13 +1,12 @@
-# Universal App
+# 快记 (QuickNote)
 
-跨平台全栈应用骨架 - Web + Android
+Web 端快速记录服务 - 时间块 + 每日问答
 
 ## 技术栈
 
 - **Web**: Next.js 15 + Ant Design + Tailwind CSS
-- **Mobile**: Expo (React Native) + React Native Paper + NativeWind
 - **API**: tRPC + Prisma + PostgreSQL
-- **状态**: Zustand + TanStack Query
+- **AI**: OpenRouter / DeepSeek (问题生成)
 - **代码规范**: Biome + Husky + Commitlint
 
 ## 快速开始
@@ -33,8 +32,7 @@ pnpm dev
 
 ```
 ├── apps/
-│   ├── web/        # Next.js Web 应用
-│   └── mobile/     # Expo React Native 应用
+│   └── web/        # Next.js Web 应用
 ├── packages/
 │   ├── api/        # tRPC API 定义
 │   ├── db/         # Prisma 数据库
@@ -45,9 +43,7 @@ pnpm dev
 ## 开发命令
 
 ```bash
-pnpm dev          # 启动所有应用
-pnpm dev:web      # 只启动 Web
-pnpm dev:mobile   # 只启动 Mobile
+pnpm dev          # 启动开发服务器
 pnpm build        # 构建
 pnpm check        # 代码检查
 pnpm test         # 测试
@@ -55,5 +51,4 @@ pnpm test         # 测试
 
 ## 文档
 
-- [技术栈详情](./TECH_STACK.md)
 - [AI 开发参考](./CLAUDE.md)

@@ -4,7 +4,6 @@
   "scripts": {
     "dev": "turbo dev",
     "dev:web": "turbo dev --filter=@app/web",
-    "dev:mobile": "turbo dev --filter=@app/mobile",
     "build": "turbo build",
     "lint": "turbo lint",
     "format": "biome format . --write",

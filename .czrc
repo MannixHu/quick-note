@@ -16,11 +16,10 @@
   ],
   "scopes": [
     { "value": "web", "name": "web:      Web app changes" },
-    { "value": "mobile", "name": "mobile:   Mobile app changes" },
     { "value": "api", "name": "api:      API changes" },
     { "value": "db", "name": "db:       Database changes" },
     { "value": "shared", "name": "shared:   Shared package changes" },
-    { "value": "ui", "name": "ui:       UI package changes" },
+    { "value": "ui", "name": "ui:       UI changes" },
     { "value": "config", "name": "config:   Configuration changes" }
   ],
   "allowCustomScopes": true,

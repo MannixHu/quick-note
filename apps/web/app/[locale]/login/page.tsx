@@ -85,7 +85,7 @@ export default function LoginPage() {
       />
 
       {/* Header */}
-      <header className="absolute right-6 top-6 z-20 flex items-center gap-3">
+      <header className="absolute right-4 md:right-6 top-4 md:top-6 z-20 flex items-center gap-2 md:gap-3">
         <LanguageSwitcher />
         <ThemeSwitcher />
       </header>

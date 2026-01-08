@@ -268,11 +268,11 @@ export default function DailyQuestionPage() {
     pingAIMutation.mutate(
       { aiConfig: formValues },
       {
-        onSuccess: (data) => {
+        onSuccess: (data: unknown) => {
           const result = data as { success: boolean; latency?: number; error?: string }
           setPingResult(result)
         },
-        onError: (error) => {
+        onError: (error: unknown) => {
           setPingResult({ success: false, error: (error as Error).message })
         },
       }
@@ -316,27 +316,28 @@ export default function DailyQuestionPage() {
   }
 
   return (
-    <main className="min-h-screen p-6">
+    <main className="min-h-screen p-4 md:p-6">
       {/* Header */}
-      <header className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <header className="mb-4 md:mb-6 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2 md:gap-4">
           <Link href="/">
-            <Button icon={<ArrowLeftOutlined />} type="text">
-              {tCommon('back')}
+            <Button icon={<ArrowLeftOutlined />} type="text" className="!px-2 md:!px-4">
+              <span className="hidden sm:inline">{tCommon('back')}</span>
             </Button>
           </Link>
-          <Title level={3} className="!mb-0">
+          <Title level={4} className="!mb-0 md:!text-xl">
             {t('title')}
           </Title>
           {!isApiAvailable && <Tag color="orange">离线模式</Tag>}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 md:gap-2">
           <Tooltip title="AI 生成问题">
             <Button
               icon={<ThunderboltOutlined />}
               onClick={handleGenerateQuestions}
               loading={generateAIMutation.isPending}
               disabled={!aiConfig}
+              size="middle"
             />
           </Tooltip>
           <Tooltip title="AI 设置">
@@ -344,6 +345,7 @@ export default function DailyQuestionPage() {
               icon={<SettingOutlined />}
               onClick={() => setSettingsOpen(true)}
               type={aiConfig ? 'default' : 'primary'}
+              size="middle"
             />
           </Tooltip>
           <LanguageSwitcher />
@@ -351,14 +353,14 @@ export default function DailyQuestionPage() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-6xl flex gap-6">
+      <div className="mx-auto max-w-6xl flex flex-col lg:flex-row gap-4 lg:gap-6">
         {/* Left: Today's Question */}
-        <div className="flex-1">
+        <div className="flex-1 order-1">
           <Card
-            className="mb-6"
+            className="mb-4 lg:mb-6"
             loading={randomQuestionQuery.isLoading}
             title={
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <QuestionCircleOutlined className="text-purple-500" />
                 <span>{t('todayQuestion')}</span>
                 <Text type="secondary" className="ml-auto text-sm font-normal">
@@ -409,7 +411,7 @@ export default function DailyQuestionPage() {
         </div>
 
         {/* Right: Answer History */}
-        <div className="w-80 shrink-0">
+        <div className="w-full lg:w-80 lg:shrink-0 order-2">
           <Card
             title={t('history')}
             loading={historyQuery.isLoading}

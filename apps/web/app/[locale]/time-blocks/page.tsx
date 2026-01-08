@@ -304,19 +304,19 @@ export default function TimeBlocksPage() {
 
       {/* Header */}
       <header className="relative z-10 border-b border-gray-200/50 dark:border-gray-800/50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-4">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 md:px-6 py-3 md:py-4">
+          <div className="flex items-center gap-2 md:gap-4">
             <Link href="/">
               <Button
                 icon={<ArrowLeftOutlined />}
                 type="text"
-                className="!text-gray-600 dark:!text-gray-400 hover:!text-primary-600"
+                className="!text-gray-600 dark:!text-gray-400 hover:!text-primary-600 !px-2 md:!px-4"
               >
-                {tCommon('back')}
+                <span className="hidden sm:inline">{tCommon('back')}</span>
               </Button>
             </Link>
             <div className="hidden sm:block">
-              <h1 className="font-display text-xl font-bold text-gray-900 dark:text-white">
+              <h1 className="font-display text-lg md:text-xl font-bold text-gray-900 dark:text-white">
                 {t('title')}
               </h1>
             </div>
@@ -326,17 +326,17 @@ export default function TimeBlocksPage() {
               </Tag>
             )}
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-3">
             <LanguageSwitcher />
             <ThemeSwitcher />
           </div>
         </div>
       </header>
 
-      <div className="relative z-10 mx-auto max-w-6xl px-6 py-8">
-        <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
+      <div className="relative z-10 mx-auto max-w-6xl px-4 md:px-6 py-4 md:py-8">
+        <div className="grid gap-4 md:gap-8 lg:grid-cols-[1fr_320px]">
           {/* Main content */}
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             {/* Date & Actions */}
             <div className="flex flex-wrap items-center justify-between gap-4">
               <DatePicker
@@ -357,7 +357,7 @@ export default function TimeBlocksPage() {
             </div>
 
             {/* Category Selector */}
-            <div className="glass rounded-2xl p-6">
+            <div className="glass rounded-xl md:rounded-2xl p-4 md:p-6">
               <div className="mb-4 flex items-center justify-between">
                 <span className="font-medium text-gray-700 dark:text-gray-300">
                   {t('selectCategory')}
@@ -440,8 +440,8 @@ export default function TimeBlocksPage() {
             </div>
 
             {/* Time Grid */}
-            <div className="glass rounded-2xl overflow-hidden">
-              <div className="grid grid-cols-[60px_1fr]">
+            <div className="glass rounded-xl md:rounded-2xl overflow-hidden">
+              <div className="grid grid-cols-[50px_1fr] md:grid-cols-[60px_1fr]">
                 {HOURS.map((hour) => {
                   const block = getBlockForHour(hour)
                   const isCurrentHour =
@@ -452,7 +452,7 @@ export default function TimeBlocksPage() {
                       {/* Time Label */}
                       <div
                         className={`
-                          flex h-12 items-center justify-end border-b border-r border-gray-200/50 dark:border-gray-700/50 pr-3 text-sm
+                          flex h-10 md:h-12 items-center justify-end border-b border-r border-gray-200/50 dark:border-gray-700/50 pr-2 md:pr-3 text-xs md:text-sm
                           ${isCurrentHour ? 'bg-primary-50 dark:bg-primary-900/20 font-semibold text-primary-600' : 'text-gray-500'}
                         `}
                       >
@@ -462,7 +462,7 @@ export default function TimeBlocksPage() {
                       <button
                         type="button"
                         className={`
-                          relative flex h-12 w-full items-center border-b border-gray-200/50 dark:border-gray-700/50 px-4 text-left transition-all duration-200
+                          relative flex h-10 md:h-12 w-full items-center border-b border-gray-200/50 dark:border-gray-700/50 px-2 md:px-4 text-left transition-all duration-200
                           ${
                             block
                               ? 'text-white'
@@ -494,14 +494,16 @@ export default function TimeBlocksPage() {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             {/* Stats */}
-            <div className="glass rounded-2xl p-6">
-              <h3 className="mb-4 font-display text-lg font-bold text-gray-900 dark:text-white">
+            <div className="glass rounded-xl md:rounded-2xl p-4 md:p-6">
+              <h3 className="mb-3 md:mb-4 font-display text-base md:text-lg font-bold text-gray-900 dark:text-white">
                 今日统计
               </h3>
-              <div className="mb-6 text-center">
-                <div className="font-display text-5xl font-bold gradient-text">{totalHours}</div>
+              <div className="mb-4 md:mb-6 text-center">
+                <div className="font-display text-4xl md:text-5xl font-bold gradient-text">
+                  {totalHours}
+                </div>
                 <div className="mt-1 text-sm text-gray-500">小时已记录</div>
               </div>
               <div className="space-y-3">
@@ -528,8 +530,8 @@ export default function TimeBlocksPage() {
 
             {/* Generated Text Preview */}
             {blocks.length > 0 && (
-              <div className="glass rounded-2xl p-6">
-                <h3 className="mb-4 font-display text-lg font-bold text-gray-900 dark:text-white">
+              <div className="glass rounded-xl md:rounded-2xl p-4 md:p-6">
+                <h3 className="mb-3 md:mb-4 font-display text-base md:text-lg font-bold text-gray-900 dark:text-white">
                   {t('generateText')}
                 </h3>
                 <pre className="whitespace-pre-wrap rounded-xl bg-gray-100/50 dark:bg-gray-800/50 p-4 text-sm font-mono text-gray-700 dark:text-gray-300">

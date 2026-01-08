@@ -4,40 +4,38 @@
 
 ## 项目概述
 
-**快记 (QuickNote)** - 跨平台快速记录服务 (Web + Android + Mac)
+**快记 (QuickNote)** - Web 端快速记录服务
 
 ### 核心功能
 
 1. **时间块记录** - 类似 iOS "时间块" App，点击时间格快速生成如 "10:00-11:00 #longTerm" 的文本
 2. **每日问答** - AI 生成的深度思考问题，帮助用户反思成长
-3. **实时同步** - 手机端更改立即同步到电脑端/Web 端
-4. **用户认证** - 账号密码登录、短信验证码登录、忘记密码
+3. **云端同步** - 数据云端存储，多设备访问
+4. **用户认证** - 账号密码登录、忘记密码
 
 ### 数据模型
 
-- `User` - 用户 (支持邮箱+密码、手机+验证码登录)
+- `User` - 用户 (支持邮箱+密码登录)
 - `TimeBlockCategory` - 时间块分类 (longTerm, work, study, rest, exercise)
 - `TimeBlock` - 时间块记录 (日期、开始时间、结束时间、分类)
 - `DailyQuestion` - 每日问题库
 - `QuestionAnswer` - 用户回答记录
-- `SmsVerification` - 短信验证码
 
 ## 技术栈速查
 
 ```
-框架: Next.js 15 (Web) + Expo 52 (React Native)
+框架: Next.js 15
 语言: TypeScript 5.7
 包管理: pnpm 9 + Turborepo
 数据库: PostgreSQL + Prisma ORM
 API: tRPC (端到端类型安全)
 AI: OpenRouter / DeepSeek (每日问题生成)
-状态: Zustand + TanStack Query
-UI: Ant Design (Web) + React Native Paper (Mobile)
-样式: Tailwind CSS + NativeWind
-表单: React Hook Form + Zod
-认证: NextAuth.js
+状态: TanStack Query
+UI: Ant Design
+样式: Tailwind CSS
+认证: Cookie-based Auth
 代码规范: Biome (lint + format)
-测试: Vitest + Playwright + Jest
+测试: Vitest + Playwright
 ```
 
 ## 目录结构
@@ -45,32 +43,25 @@ UI: Ant Design (Web) + React Native Paper (Mobile)
 ```
 universal-app/
 ├── apps/
-│   ├── web/                 # Next.js 15 Web 应用
-│   │   ├── app/             # App Router 页面
-│   │   │   ├── api/         # API Routes
-│   │   │   │   ├── trpc/    # tRPC 端点
-│   │   │   │   └── health/  # 健康检查
-│   │   │   ├── layout.tsx   # 根布局
-│   │   │   └── page.tsx     # 首页
-│   │   ├── lib/
-│   │   │   └── trpc/        # tRPC 客户端配置
-│   │   └── components/      # Web 专用组件
-│   │
-│   └── mobile/              # Expo React Native 应用
-│       ├── app/             # Expo Router 页面
-│       │   ├── _layout.tsx  # 根布局
-│       │   └── index.tsx    # 首页
+│   └── web/                 # Next.js 15 Web 应用
+│       ├── app/             # App Router 页面
+│       │   ├── [locale]/    # 国际化页面
+│       │   ├── api/         # API Routes
+│       │   │   ├── trpc/    # tRPC 端点
+│       │   │   └── health/  # 健康检查
+│       │   ├── layout.tsx   # 根布局
+│       │   └── page.tsx     # 首页
 │       ├── lib/
-│       │   └── trpc/        # tRPC 客户端配置
-│       └── components/      # RN 专用组件
+│       │   ├── trpc/        # tRPC 客户端配置
+│       │   └── i18n/        # 国际化配置
+│       └── components/      # 组件
 │
 ├── packages/
 │   ├── api/                 # tRPC API 定义
 │   │   └── src/
 │   │       ├── trpc.ts      # tRPC 初始化
 │   │       ├── routers/     # API 路由
-│   │       │   ├── user.ts
-│   │       │   └── post.ts
+│   │       ├── services/    # 业务服务 (AI 等)
 │   │       └── index.ts     # 导出 appRouter
 │   │
 │   ├── db/                  # Prisma 数据库
@@ -102,8 +93,7 @@ universal-app/
 |------|------|
 | **tRPC 路由定义** | `packages/api/src/routers/*.ts` |
 | **Prisma Schema** | `packages/db/prisma/schema.prisma` |
-| **Web 页面** | `apps/web/app/**/*.tsx` |
-| **Mobile 页面** | `apps/mobile/app/**/*.tsx` |
+| **Web 页面** | `apps/web/app/[locale]/**/*.tsx` |
 | **共享工具** | `packages/shared/src/utils/*.ts` |
 | **类型定义** | `packages/shared/src/types/index.ts` |
 
@@ -111,12 +101,11 @@ universal-app/
 
 ```bash
 # 开发
-pnpm dev                  # 启动所有应用
+pnpm dev                  # 启动开发服务器
 pnpm dev:web              # 只启动 Web
-pnpm dev:mobile           # 只启动 Mobile
 
 # 构建
-pnpm build                # 构建所有
+pnpm build                # 构建
 
 # 代码检查
 pnpm check                # Biome 检查
@@ -178,31 +167,16 @@ export const appRouter = createTRPCRouter({
 ### 添加新 Web 页面
 
 ```typescript
-// apps/web/app/example/page.tsx
+// apps/web/app/[locale]/example/page.tsx
 export default function ExamplePage() {
   return <div>Example</div>
-}
-```
-
-### 添加新 Mobile 页面
-
-```typescript
-// apps/mobile/app/example.tsx
-import { View, Text } from 'react-native'
-
-export default function ExampleScreen() {
-  return (
-    <View>
-      <Text>Example</Text>
-    </View>
-  )
 }
 ```
 
 ### 使用 tRPC 查询数据
 
 ```typescript
-// Web 或 Mobile 组件中
+// 组件中
 import { trpc } from '@/lib/trpc/client'
 
 function MyComponent() {
@@ -213,45 +187,10 @@ function MyComponent() {
 }
 ```
 
-### 表单处理
-
-```typescript
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-
-const schema = z.object({
-  name: z.string().min(1),
-  email: z.string().email(),
-})
-
-function MyForm() {
-  const { register, handleSubmit, formState: { errors } } = useForm({
-    resolver: zodResolver(schema),
-  })
-
-  const onSubmit = (data) => {
-    // ...
-  }
-
-  return (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      <input {...register('name')} />
-      {errors.name && <span>{errors.name.message}</span>}
-      <button type="submit">Submit</button>
-    </form>
-  )
-}
-```
-
 ## 包依赖关系
 
 ```
 @app/web ──────┬──► @app/api ──► @app/db
-               │
-               └──► @app/shared
-
-@app/mobile ───┬──► @app/api (类型)
                │
                └──► @app/shared
 ```
@@ -269,10 +208,6 @@ AI_PROVIDER=openrouter  # 或 deepseek
 OPENROUTER_API_KEY=your-key  # 如果使用 OpenRouter
 DEEPSEEK_API_KEY=your-key    # 如果使用 DeepSeek
 AI_MODEL=anthropic/claude-3.5-sonnet  # 可选，指定模型
-
-# 可选
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
 ```
 
 ## AI 每日问题生成
@@ -346,11 +281,10 @@ const todayQ = await trpc.dailyQuestion.getTodayQuestionWithAI.query({
 3. **Prisma**: 数据库操作通过 Prisma Client，修改 schema 后需要 generate
 4. **Biome**: 代码格式化使用 Biome，不是 ESLint + Prettier
 5. **Monorepo**: 使用 pnpm workspace，包之间通过 `workspace:*` 引用
-6. **样式**: Web 用 Tailwind + Ant Design，Mobile 用 NativeWind + Paper
-7. **路由**: Web 用 Next.js App Router，Mobile 用 Expo Router
+6. **样式**: Tailwind + Ant Design
+7. **路由**: Next.js App Router + next-intl 国际化
 
 ## 测试文件位置
 
 - 单元测试: 与源文件同目录，`*.test.ts(x)`
-- E2E 测试 (Web): `apps/web/e2e/`
-- E2E 测试 (Mobile): `apps/mobile/.maestro/`
+- E2E 测试: `apps/web/e2e/`
