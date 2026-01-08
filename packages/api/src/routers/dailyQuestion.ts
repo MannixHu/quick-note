@@ -515,4 +515,41 @@ export const dailyQuestionRouter = createTRPCRouter({
       model: process.env.AI_MODEL || 'default',
     }
   }),
+
+  /**
+   * 测试 AI 连接 (Ping)
+   */
+  pingAI: publicProcedure
+    .input(
+      z.object({
+        aiConfig: z.object({
+          provider: z.enum(['openrouter', 'deepseek']),
+          apiKey: z.string(),
+          model: z.string().optional(),
+        }),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const aiService = createAIService(input.aiConfig)
+
+      if (!aiService) {
+        throw new Error('Failed to create AI service')
+      }
+
+      try {
+        const result = await aiService.ping()
+        return {
+          success: true,
+          ...result,
+        }
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          latency: 0,
+          model: input.aiConfig.model || 'default',
+          provider: input.aiConfig.provider,
+        }
+      }
+    }),
 })

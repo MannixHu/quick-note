@@ -5,7 +5,10 @@ import { ThemeSwitcher } from '@/components/theme-switcher'
 import { Link } from '@/lib/i18n/routing'
 import { trpc } from '@/lib/trpc/client'
 import {
+  ApiOutlined,
   ArrowLeftOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
   QuestionCircleOutlined,
   SettingOutlined,
   ThunderboltOutlined,
@@ -19,6 +22,7 @@ import {
   Form,
   Input,
   Radio,
+  Spin,
   Tag,
   Tooltip,
   Typography,
@@ -77,6 +81,11 @@ export default function DailyQuestionPage() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [aiConfig, setAiConfig] = useState<AIConfig | null>(null)
   const [settingsForm] = Form.useForm()
+  const [pingResult, setPingResult] = useState<{
+    success: boolean
+    latency?: number
+    error?: string
+  } | null>(null)
 
   // Load AI config from localStorage
   useEffect(() => {
@@ -111,6 +120,9 @@ export default function DailyQuestionPage() {
 
   // @ts-expect-error - tRPC v11 RC type compatibility
   const generateAIMutation = trpc.dailyQuestion.generateAIQuestions.useMutation()
+
+  // @ts-expect-error - tRPC v11 RC type compatibility
+  const pingAIMutation = trpc.dailyQuestion.pingAI.useMutation()
 
   // Handle mutation results
   // biome-ignore lint/correctness/useExhaustiveDependencies: message and getNextQuestion are stable refs
@@ -248,7 +260,29 @@ export default function DailyQuestionPage() {
     setAiConfig(values)
     localStorage.setItem('ai-config', JSON.stringify(values))
     setSettingsOpen(false)
+    setPingResult(null)
     message.success('AI 配置已保存')
+  }
+
+  const handlePingTest = () => {
+    const formValues = settingsForm.getFieldsValue() as AIConfig
+    if (!formValues.provider || !formValues.apiKey) {
+      message.warning('请先填写服务商和 API Key')
+      return
+    }
+    setPingResult(null)
+    pingAIMutation.mutate(
+      { aiConfig: formValues },
+      {
+        onSuccess: (data) => {
+          const result = data as { success: boolean; latency?: number; error?: string }
+          setPingResult(result)
+        },
+        onError: (error) => {
+          setPingResult({ success: false, error: (error as Error).message })
+        },
+      }
+    )
   }
 
   const handleGenerateQuestions = () => {
@@ -386,39 +420,38 @@ export default function DailyQuestionPage() {
             title={t('history')}
             loading={historyQuery.isLoading}
             className="sticky top-6"
-            styles={{ body: { maxHeight: 'calc(100vh - 180px)', overflowY: 'auto' } }}
+            styles={{
+              body: { maxHeight: 'calc(100vh - 180px)', overflowY: 'auto', padding: '12px 16px' },
+            }}
           >
             {history.length === 0 ? (
               <Empty description={tCommon('noData')} />
             ) : (
-              <div className="divide-y divide-gray-100 dark:divide-gray-800">
+              <div className="space-y-4">
                 {history.map((item) => (
-                  <div key={item.id} className="py-3 first:pt-0 last:pb-0">
-                    <div className="mb-1">
+                  <div key={item.id}>
+                    <div className="flex items-center gap-2 mb-1">
                       <Text type="secondary" className="text-xs">
                         {item.date}
                       </Text>
                     </div>
-                    <Text strong className="mb-1 block text-purple-600 text-sm">
+                    <Text className="text-sm text-gray-500 dark:text-gray-400 block mb-1">
                       {item.question}
                     </Text>
                     {editingHistoryId === item.id ? (
                       <div className="space-y-2">
                         <TextArea
-                          rows={3}
+                          rows={2}
                           value={editingHistoryAnswer}
                           onChange={(e) => setEditingHistoryAnswer(e.target.value)}
                           className="resize-none text-sm"
+                          autoFocus
                         />
                         <div className="flex gap-2">
-                          <Button
-                            type="primary"
-                            size="small"
-                            onClick={() => handleSaveHistoryEdit(item)}
-                          >
+                          <Button size="small" onClick={() => handleSaveHistoryEdit(item)}>
                             保存
                           </Button>
-                          <Button size="small" onClick={handleCancelHistoryEdit}>
+                          <Button size="small" type="text" onClick={handleCancelHistoryEdit}>
                             取消
                           </Button>
                         </div>
@@ -426,7 +459,7 @@ export default function DailyQuestionPage() {
                     ) : (
                       <button
                         type="button"
-                        className="text-sm text-gray-600 dark:text-gray-400 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded p-1 -m-1 transition-colors text-left w-full"
+                        className="text-sm text-left w-full hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                         onClick={() => handleEditHistory(item)}
                       >
                         {item.answer}
@@ -470,6 +503,35 @@ export default function DailyQuestionPage() {
           <Form.Item name="model" label="模型 (可选)">
             <Input placeholder="默认: Claude 3.5 / DeepSeek Chat" />
           </Form.Item>
+
+          {/* Ping Test */}
+          <div className="mb-4 flex items-center gap-2">
+            <Button
+              icon={<ApiOutlined />}
+              onClick={handlePingTest}
+              loading={pingAIMutation.isPending}
+            >
+              测试连接
+            </Button>
+            {pingAIMutation.isPending && <Spin size="small" />}
+            {pingResult && (
+              <span className="flex items-center gap-1 text-sm">
+                {pingResult.success ? (
+                  <>
+                    <CheckCircleOutlined className="text-green-500" />
+                    <span className="text-green-600">{pingResult.latency}ms</span>
+                  </>
+                ) : (
+                  <>
+                    <CloseCircleOutlined className="text-red-500" />
+                    <span className="text-red-500 truncate max-w-[180px]" title={pingResult.error}>
+                      {pingResult.error}
+                    </span>
+                  </>
+                )}
+              </span>
+            )}
+          </div>
 
           <Form.Item>
             <Button type="primary" htmlType="submit" block>

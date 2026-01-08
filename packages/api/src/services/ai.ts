@@ -38,6 +38,56 @@ export class AIService {
   }
 
   /**
+   * 测试 API 连接是否正常
+   * @returns 返回延迟时间（毫秒）和模型信息
+   */
+  async ping(): Promise<{ latency: number; model: string; provider: string }> {
+    const startTime = Date.now()
+
+    try {
+      const response = await fetch(`${this.baseURL}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.config.apiKey}`,
+          ...(this.config.provider === 'openrouter' && {
+            'HTTP-Referer': 'https://github.com/your-repo',
+            'X-Title': 'QuickNote App',
+          }),
+        },
+        body: JSON.stringify({
+          model: this.defaultModel,
+          messages: [
+            {
+              role: 'user',
+              content: 'Hi',
+            },
+          ],
+          max_tokens: 5,
+        }),
+      })
+
+      const latency = Date.now() - startTime
+
+      if (!response.ok) {
+        const error = await response.text()
+        throw new Error(`API error: ${response.status} - ${error}`)
+      }
+
+      return {
+        latency,
+        model: this.defaultModel,
+        provider: this.config.provider,
+      }
+    } catch (error) {
+      const latency = Date.now() - startTime
+      throw new Error(
+        `Connection failed (${latency}ms): ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
+    }
+  }
+
+  /**
    * 生成一个深度思考问题
    */
   async generateQuestion(category?: string): Promise<GeneratedQuestion> {
