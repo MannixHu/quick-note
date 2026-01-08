@@ -244,15 +244,9 @@ export default function DailyQuestionPage() {
   }
 
   const getNextQuestion = () => {
-    // Get a random question from the sample questions, excluding the current one
-    const availableQuestions = SAMPLE_QUESTIONS.filter((q) => q !== todayQuestion)
-    const nextQuestion =
-      availableQuestions[Math.floor(Math.random() * availableQuestions.length)] ??
-      SAMPLE_QUESTIONS[0] ??
-      '今天最让你感到有成就感的事情是什么？'
-    setTodayQuestion(nextQuestion)
+    // Only fetch from API, let the useEffect handle the update
+    // If API fails, the error handler will keep the current question
     setQuestionId(null)
-    // Try to fetch from API
     randomQuestionQuery.refetch()
   }
 
