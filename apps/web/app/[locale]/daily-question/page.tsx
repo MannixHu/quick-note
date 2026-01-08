@@ -440,12 +440,13 @@ export default function DailyQuestionPage() {
                     </Text>
                     {editingHistoryId === item.id ? (
                       <div className="space-y-2">
-                        <TextArea
+                        <Input.TextArea
                           rows={2}
                           value={editingHistoryAnswer}
                           onChange={(e) => setEditingHistoryAnswer(e.target.value)}
                           className="resize-none text-sm"
                           autoFocus
+                          variant="borderless"
                         />
                         <div className="flex gap-2">
                           <Button size="small" onClick={() => handleSaveHistoryEdit(item)}>
@@ -459,7 +460,7 @@ export default function DailyQuestionPage() {
                     ) : (
                       <button
                         type="button"
-                        className="text-sm text-left w-full hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                        className="text-sm cursor-pointer hover:text-primary-600 dark:hover:text-primary-400 transition-colors text-left bg-transparent border-0 p-0 w-full"
                         onClick={() => handleEditHistory(item)}
                       >
                         {item.answer}
