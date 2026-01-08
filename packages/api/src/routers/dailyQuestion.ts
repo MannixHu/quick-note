@@ -260,22 +260,300 @@ const SAMPLE_QUESTIONS = [
   { question: '什么是你从未质疑过但也许应该质疑的？', category: 'curiosity' },
   { question: '你的好奇心最近带你去了哪里？', category: 'curiosity' },
   { question: '什么问题你已经思考了很久？', category: 'curiosity' },
+
+  // === Psychology & Mind (心理与心智) - INTP 特色 ===
+  { question: '你的潜意识在什么情况下会影响你的决定？', category: 'psychology' },
+  { question: '什么情绪你最难以识别和命名？', category: 'psychology' },
+  { question: '你的大脑如何欺骗你？', category: 'psychology' },
+  { question: '什么触发因素会让你立刻进入防御状态？', category: 'psychology' },
+  { question: '你的思维在压力下会发生什么变化？', category: 'psychology' },
+  { question: '什么是你童年形成但至今仍影响你的信念？', category: 'psychology' },
+  { question: '你如何区分真实的直觉和恐惧伪装的直觉？', category: 'psychology' },
+  { question: '什么是你的心理防御机制？', category: 'psychology' },
+  { question: '你的自我对话通常是什么语调？', category: 'psychology' },
+  { question: '什么会触发你的拖延行为？', category: 'psychology' },
+  { question: '你如何处理认知失调？', category: 'psychology' },
+  { question: '什么是你逃避但需要面对的心理议题？', category: 'psychology' },
+  { question: '你的注意力模式是什么样的？', category: 'psychology' },
+  { question: '什么会让你感到existential anxiety？', category: 'psychology' },
+  { question: '你的心智模型如何影响你对现实的感知？', category: 'psychology' },
+
+  // === Mathematics & Patterns (数学与模式) - INTP 特色 ===
+  { question: '你在日常生活中发现了什么有趣的数学模式？', category: 'mathematics' },
+  { question: '哪个数学概念最让你感到优美？', category: 'mathematics' },
+  { question: '如果可以证明任何一个未解决的数学问题，你会选哪个？', category: 'mathematics' },
+  { question: '无穷大有不同的大小，这个概念对你意味着什么？', category: 'mathematics' },
+  { question: '概率思维如何改变了你看待世界的方式？', category: 'mathematics' },
+  { question: '你如何在混乱中寻找模式？', category: 'mathematics' },
+  { question: '哪个数学悖论最困扰你？', category: 'mathematics' },
+  { question: '指数增长的直觉为什么如此困难？', category: 'mathematics' },
+  { question: '你如何用数学思维解决日常问题？', category: 'mathematics' },
+  { question: '什么是你最喜欢的数学证明？为什么？', category: 'mathematics' },
+  { question: '黄金比例为什么在自然界中如此普遍？', category: 'mathematics' },
+  { question: '你如何理解"所有模型都是错的，但有些是有用的"？', category: 'mathematics' },
+  { question: '分形几何如何改变了你对复杂性的理解？', category: 'mathematics' },
+  { question: '博弈论如何帮助你理解人类行为？', category: 'mathematics' },
+  { question: '什么是你见过的最优雅的数学结构？', category: 'mathematics' },
+
+  // === Ethics & Morality (伦理与道德) - INTP 特色 ===
+  { question: '电车难题揭示了你怎样的道德直觉？', category: 'ethics' },
+  { question: '功利主义和义务论，你更倾向于哪个？为什么？', category: 'ethics' },
+  { question: '什么情况下撒谎是道德的？', category: 'ethics' },
+  { question: '你如何定义"公平"？', category: 'ethics' },
+  { question: '对未来世代，我们有什么道德责任？', category: 'ethics' },
+  { question: '动物权利的边界在哪里？', category: 'ethics' },
+  { question: '隐私权和公共利益如何平衡？', category: 'ethics' },
+  { question: '道德相对主义有没有边界？', category: 'ethics' },
+  { question: '什么是你的道德底线？', category: 'ethics' },
+  { question: '好的意图能否为不好的结果辩护？', category: 'ethics' },
+  { question: 'AI应该有权利吗？标准是什么？', category: 'ethics' },
+  { question: '你如何判断一个社会制度是否公正？', category: 'ethics' },
+  { question: '个人自由和集体福祉之间的张力如何解决？', category: 'ethics' },
+  { question: '什么是你曾经认为不道德但现在改变看法的事？', category: 'ethics' },
+  { question: '道德进步是真实的还是只是文化变迁？', category: 'ethics' },
+
+  // === Language & Communication (语言与沟通) - INTP 特色 ===
+  { question: '语言如何塑造你的思维？', category: 'language' },
+  { question: '什么概念在你的母语中无法完美表达？', category: 'language' },
+  { question: '你最喜欢的外语中没有对应中文词汇的概念是什么？', category: 'language' },
+  { question: '沉默能传达什么信息？', category: 'language' },
+  { question: '你如何向5岁小孩解释一个复杂概念？', category: 'language' },
+  { question: '什么是你经常被误解的话？', category: 'language' },
+  { question: '语言的模糊性是bug还是feature？', category: 'language' },
+  { question: '你如何通过语言影响他人的思维？', category: 'language' },
+  { question: '什么是你最喜欢的英文单词？为什么？', category: 'language' },
+  { question: '如果要创造一个新词，你会创造什么？', category: 'language' },
+  { question: '隐喻如何帮助或阻碍理解？', category: 'language' },
+  { question: '编程语言和自然语言有什么本质区别？', category: 'language' },
+  { question: '你的内心独白使用什么语言？', category: 'language' },
+  { question: '什么是你曾经误解很久的词？', category: 'language' },
+  { question: '如何用最少的词传达最多的信息？', category: 'language' },
+
+  // === Consciousness & Perception (意识与感知) - INTP 特色 ===
+  { question: '你如何知道其他人有意识？', category: 'consciousness' },
+  { question: '梦境告诉了你什么关于意识的本质？', category: 'consciousness' },
+  { question: '如果你的感知完全不同，你还是"你"吗？', category: 'consciousness' },
+  { question: '冥想如何改变你对心智的理解？', category: 'consciousness' },
+  { question: '什么是你无法用语言描述的体验？', category: 'consciousness' },
+  { question: '你的意识在睡眠时去了哪里？', category: 'consciousness' },
+  { question: '婴儿的意识体验是什么样的？', category: 'consciousness' },
+  { question: '你如何区分想象和记忆？', category: 'consciousness' },
+  { question: '注意力的本质是什么？', category: 'consciousness' },
+  { question: '如果大脑被完美复制，意识会在两个地方同时存在吗？', category: 'consciousness' },
+  { question: '什么是"自我"的边界？', category: 'consciousness' },
+  { question: '你的感知有多少是大脑的构建而非真实输入？', category: 'consciousness' },
+  { question: '痛苦的意识体验能被完全理解吗？', category: 'consciousness' },
+  { question: '你如何知道你现在不是在做梦？', category: 'consciousness' },
+  { question: '意识的进化优势是什么？', category: 'consciousness' },
+
+  // === History & Civilization (历史与文明) - INTP 特色 ===
+  { question: '历史上哪个转折点如果不同，世界会截然不同？', category: 'history' },
+  { question: '哪个古代文明最让你着迷？为什么？', category: 'history' },
+  { question: '历史是线性进步的还是循环的？', category: 'history' },
+  { question: '哪个历史人物被严重低估了？', category: 'history' },
+  { question: '什么历史教训人类反复忘记？', category: 'history' },
+  { question: '如果你能改变一个历史事件，你会选择哪个？', category: 'history' },
+  { question: '文明崩溃的共同模式是什么？', category: 'history' },
+  { question: '哪项发明对人类历史影响最大？', category: 'history' },
+  { question: '我们这个时代会被历史如何记住？', category: 'history' },
+  { question: '历史的"大人物"理论和"社会力量"理论哪个更准确？', category: 'history' },
+  { question: '什么是人类历史上最被低估的发明？', category: 'history' },
+  { question: '你如何从历史中学习而不过度简化？', category: 'history' },
+  { question: '哪个消失的文明你最想了解更多？', category: 'history' },
+  { question: '历史决定论有多大程度是真的？', category: 'history' },
+  { question: '什么是你希望能亲眼见证的历史时刻？', category: 'history' },
+
+  // === Paradoxes & Puzzles (悖论与谜题) - INTP 特色 ===
+  { question: '忒修斯之船悖论对身份意味着什么？', category: 'paradox' },
+  { question: '全能悖论（上帝能否创造他举不起的石头）如何解决？', category: 'paradox' },
+  { question: '祖父悖论对时间旅行意味着什么？', category: 'paradox' },
+  { question: '说谎者悖论（"这句话是假的"）如何处理？', category: 'paradox' },
+  { question: '芝诺悖论对运动的本质说明了什么？', category: 'paradox' },
+  { question: '双缝实验的结果如何改变你对现实的理解？', category: 'paradox' },
+  { question: '无限猴子定理意味着什么？', category: 'paradox' },
+  { question: '生日悖论为什么违反直觉？', category: 'paradox' },
+  { question: '辛普森悖论如何影响数据解读？', category: 'paradox' },
+  { question: '你遇到过的最难解的逻辑谜题是什么？', category: 'paradox' },
+  { question: '不完备性定理对知识的极限意味着什么？', category: 'paradox' },
+  { question: '船长悖论对决策意味着什么？', category: 'paradox' },
+  { question: '纽康悖论你会选择一个盒子还是两个？', category: 'paradox' },
+  { question: '全知和自由意志如何共存？', category: 'paradox' },
+  { question: '什么悖论你曾经误解后来恍然大悟？', category: 'paradox' },
+
+  // === Meta-cognition (元认知) - INTP 特色 ===
+  { question: '你如何思考"思考"本身？', category: 'metacognition' },
+  { question: '你的思维过程中有什么模式？', category: 'metacognition' },
+  { question: '你如何知道你知道某件事？', category: 'metacognition' },
+  { question: '你的认知盲点在哪里？', category: 'metacognition' },
+  { question: '你如何监控自己的思维质量？', category: 'metacognition' },
+  { question: '什么时候你应该相信自己的判断，什么时候不应该？', category: 'metacognition' },
+  { question: '你如何区分深思熟虑和过度思考？', category: 'metacognition' },
+  { question: '你的推理能力在哪些领域最强？最弱？', category: 'metacognition' },
+  { question: '你如何检测自己的偏见？', category: 'metacognition' },
+  { question: '思考太多是否可能？边界在哪里？', category: 'metacognition' },
+  { question: '你如何培养更好的思维习惯？', category: 'metacognition' },
+  { question: '你的知识的知识（元知识）是什么？', category: 'metacognition' },
+  { question: '你如何平衡分析和行动？', category: 'metacognition' },
+  { question: '什么是你思维中的"高速公路"（经常使用的思维路径）？', category: 'metacognition' },
+  { question: '你如何训练自己更好地思考？', category: 'metacognition' },
+
+  // === Problem Solving (问题解决) - INTP 特色 ===
+  { question: '你解决问题的标志性方法是什么？', category: 'problem_solving' },
+  { question: '什么类型的问题最能激发你的热情？', category: 'problem_solving' },
+  { question: '你如何判断一个问题是否值得解决？', category: 'problem_solving' },
+  { question: '当你陷入僵局时，你会怎么做？', category: 'problem_solving' },
+  { question: '什么是你解决过的最优雅的问题？', category: 'problem_solving' },
+  { question: '如何将一个大问题分解成可处理的部分？', category: 'problem_solving' },
+  { question: '你如何判断是继续尝试还是放弃换方向？', category: 'problem_solving' },
+  { question: '什么启发法对你最有效？', category: 'problem_solving' },
+  { question: '你如何处理ill-defined问题？', category: 'problem_solving' },
+  { question: '什么是你花了最长时间才解决的问题？', category: 'problem_solving' },
+  { question: '你如何在解决问题时保持动力？', category: 'problem_solving' },
+  { question: '什么问题你放弃了但后来后悔？', category: 'problem_solving' },
+  { question: '你如何验证你的解决方案是正确的？', category: 'problem_solving' },
+  { question: '最简单的解决方案为什么往往最好？', category: 'problem_solving' },
+  { question: '你如何从失败的解决方案中学习？', category: 'problem_solving' },
+
+  // === Information & Knowledge (信息与知识) - INTP 特色 ===
+  { question: '你如何过滤海量信息找到有价值的？', category: 'information' },
+  { question: '信息过载如何影响你的决策？', category: 'information' },
+  { question: '什么是你的信息获取习惯？', category: 'information' },
+  { question: '你如何组织和存储知识？', category: 'information' },
+  { question: '什么是你的知识管理系统？', category: 'information' },
+  { question: '如何区分信号和噪音？', category: 'information' },
+  { question: '你如何验证信息的可靠性？', category: 'information' },
+  { question: '什么信息你消费太多？太少？', category: 'information' },
+  { question: '你的信息饮食健康吗？', category: 'information' },
+  { question: '知识的半衰期对你意味着什么？', category: 'information' },
+  { question: '什么是你希望能更快获取的信息？', category: 'information' },
+  { question: '你如何在信息和理解之间建立桥梁？', category: 'information' },
+  { question: '什么是你的"第二大脑"系统？', category: 'information' },
+  { question: '你如何处理相互矛盾的信息源？', category: 'information' },
+  { question: '知识的网络效应如何影响你的学习？', category: 'information' },
+
+  // === Complexity & Emergence (复杂性与涌现) - INTP 特色 ===
+  { question: '简单规则如何产生复杂行为？', category: 'complexity' },
+  { question: '什么是你见过的最令人惊讶的涌现现象？', category: 'complexity' },
+  { question: '混沌理论如何影响你对预测的看法？', category: 'complexity' },
+  { question: '什么是复杂而不是复杂化？', category: 'complexity' },
+  { question: '你如何在复杂系统中寻找杠杆点？', category: 'complexity' },
+  { question: '什么看似简单的事物实际上极其复杂？', category: 'complexity' },
+  { question: '涌现意识的本质是什么？', category: 'complexity' },
+  { question: '蝴蝶效应如何影响你的长期规划？', category: 'complexity' },
+  { question: '复杂性的边缘是创新的温床吗？', category: 'complexity' },
+  { question: '你如何处理非线性关系？', category: 'complexity' },
+  { question: '什么是不可还原的复杂性？', category: 'complexity' },
+  { question: '整体如何大于部分之和？', category: 'complexity' },
+  { question: '你如何在复杂性中保持清晰的思维？', category: 'complexity' },
+  { question: '什么是你理解复杂系统的关键洞察？', category: 'complexity' },
+  { question: '简化和过度简化的界限在哪里？', category: 'complexity' },
+
+  // === Analogies & Connections (类比与连接) - INTP 特色 ===
+  { question: '什么是你最喜欢的跨领域类比？', category: 'analogy' },
+  { question: '你如何在看似无关的事物间发现联系？', category: 'analogy' },
+  { question: '什么类比曾经帮你理解一个难题？', category: 'analogy' },
+  { question: '不同领域的什么概念可以相互借鉴？', category: 'analogy' },
+  { question: '你生活的什么方面可以用编程类比解释？', category: 'analogy' },
+  { question: '自然界的什么现象可以类比人类社会？', category: 'analogy' },
+  { question: '什么是危险的类比？', category: 'analogy' },
+  { question: '你如何判断一个类比是否恰当？', category: 'analogy' },
+  { question: '什么是你创造的最有用的类比？', category: 'analogy' },
+  { question: '模式识别如何帮助你理解新领域？', category: 'analogy' },
+  { question: '什么是你领域中被低估的跨学科连接？', category: 'analogy' },
+  { question: '如何用物理学原理解释社会现象？', category: 'analogy' },
+  { question: '什么生物学概念可以应用于组织管理？', category: 'analogy' },
+  { question: '你如何用旧知识理解新概念？', category: 'analogy' },
+  { question: '什么是你最近发现的意外联系？', category: 'analogy' },
+
+  // === Existence & Being (存在与存有) - INTP 特色 ===
+  { question: '为什么存在"某物"而不是"虚无"？', category: 'existence' },
+  { question: '你如何定义"存在"？', category: 'existence' },
+  { question: '虚拟实体算不算"存在"？', category: 'existence' },
+  { question: '数字存在吗？它们存在于哪里？', category: 'existence' },
+  { question: '过去还存在吗？未来存在吗？', category: 'existence' },
+  { question: '你的存在对宇宙意味着什么？', category: 'existence' },
+  { question: '如果没有观察者，宇宙还存在吗？', category: 'existence' },
+  { question: '潜在性和实在性有什么区别？', category: 'existence' },
+  { question: '你如何处理存在的偶然性？', category: 'existence' },
+  { question: '什么给了你的存在以意义？', category: 'existence' },
+  { question: '存在先于本质，还是本质先于存在？', category: 'existence' },
+  { question: '你如何面对终极的虚无？', category: 'existence' },
+  { question: '短暂的存在和永恒的存在哪个更有价值？', category: 'existence' },
+  { question: '你的存在如何影响他人的存在？', category: 'existence' },
+  { question: '存在本身是否需要理由？', category: 'existence' },
+
+  // === Innovation & Progress (创新与进步) - INTP 特色 ===
+  { question: '什么阻碍了你所在领域的创新？', category: 'innovation' },
+  { question: '最伟大的创新来自哪里？', category: 'innovation' },
+  { question: '如何平衡改进现有方案和寻找全新方案？', category: 'innovation' },
+  { question: '什么"不可能"的事情你认为最终会实现？', category: 'innovation' },
+  { question: '创新需要什么样的环境？', category: 'innovation' },
+  { question: '什么是被忽视的低悬果实（容易实现的创新）？', category: 'innovation' },
+  { question: '进步是线性的还是突破性的？', category: 'innovation' },
+  { question: '什么创新被过早放弃了？', category: 'innovation' },
+  { question: '你如何培养创新思维？', category: 'innovation' },
+  { question: '什么是你想要解决但还没有好方案的问题？', category: 'innovation' },
+  { question: '范式转换是如何发生的？', category: 'innovation' },
+  { question: '什么是你所在领域的"从0到1"机会？', category: 'innovation' },
+  { question: '传统智慧的哪些部分需要被挑战？', category: 'innovation' },
+  { question: '你如何区分真正的创新和噱头？', category: 'innovation' },
+  { question: '什么资源或技术的组合可能产生突破？', category: 'innovation' },
 ]
 
 export const dailyQuestionRouter = createTRPCRouter({
-  // Initialize questions in database (run once)
-  seedQuestions: publicProcedure.mutation(async ({ ctx }) => {
-    const existingCount = await ctx.prisma.dailyQuestion.count()
-    if (existingCount > 0) {
-      return { message: 'Questions already seeded', count: existingCount }
-    }
+  // Initialize questions in database (run once or force reseed)
+  seedQuestions: publicProcedure
+    .input(z.object({ force: z.boolean().default(false) }).optional())
+    .mutation(async ({ ctx, input }) => {
+      const force = input?.force ?? false
+      const existingCount = await ctx.prisma.dailyQuestion.count()
 
-    await ctx.prisma.dailyQuestion.createMany({
-      data: SAMPLE_QUESTIONS,
-    })
+      if (force) {
+        // Delete related records first (foreign key constraints)
+        await ctx.prisma.questionAnswer.deleteMany()
+        await ctx.prisma.userDailyQuestion.deleteMany()
+        // Delete all existing questions and reseed
+        await ctx.prisma.dailyQuestion.deleteMany()
+        await ctx.prisma.dailyQuestion.createMany({
+          data: SAMPLE_QUESTIONS,
+        })
+        return {
+          message: 'Questions force reseeded successfully',
+          previousCount: existingCount,
+          newCount: SAMPLE_QUESTIONS.length,
+        }
+      }
 
-    return { message: 'Questions seeded successfully', count: SAMPLE_QUESTIONS.length }
-  }),
+      if (existingCount > 0) {
+        // Try to add new questions (skip duplicates based on question text)
+        const existingQuestions = await ctx.prisma.dailyQuestion.findMany({
+          select: { question: true },
+        })
+        const existingSet = new Set(existingQuestions.map((q) => q.question))
+        const newQuestions = SAMPLE_QUESTIONS.filter((q) => !existingSet.has(q.question))
+
+        if (newQuestions.length === 0) {
+          return { message: 'All questions already exist', count: existingCount }
+        }
+
+        await ctx.prisma.dailyQuestion.createMany({
+          data: newQuestions,
+          skipDuplicates: true,
+        })
+
+        return {
+          message: `Added ${newQuestions.length} new questions`,
+          previousCount: existingCount,
+          newCount: existingCount + newQuestions.length,
+        }
+      }
+
+      await ctx.prisma.dailyQuestion.createMany({
+        data: SAMPLE_QUESTIONS,
+      })
+
+      return { message: 'Questions seeded successfully', count: SAMPLE_QUESTIONS.length }
+    }),
 
   // Get a random question (not tied to daily limit)
   getRandomQuestion: publicProcedure
