@@ -353,121 +353,111 @@ export default function DailyQuestionPage() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-6xl flex flex-col lg:flex-row gap-4 lg:gap-6">
-        {/* Left: Today's Question */}
-        <div className="flex-1 order-1">
-          <Card
-            className="mb-4 lg:mb-6"
-            loading={randomQuestionQuery.isLoading}
-            title={
-              <div className="flex items-center gap-2 flex-wrap">
-                <QuestionCircleOutlined className="text-purple-500" />
-                <span>{t('todayQuestion')}</span>
-                <Text type="secondary" className="ml-auto text-sm font-normal">
-                  {dayjs().format('YYYY-MM-DD')}
-                </Text>
-              </div>
-            }
-          >
-            {randomQuestionQuery.error ? (
-              <div className="text-center py-4">
-                <Text type="danger">加载问题失败，请检查网络连接</Text>
-                <br />
-                <Button type="link" onClick={() => randomQuestionQuery.refetch()} className="mt-2">
-                  重试
-                </Button>
-              </div>
-            ) : (
-              <>
-                <Paragraph className="mb-4 text-lg">{todayQuestion}</Paragraph>
+      <div className="mx-auto max-w-3xl flex flex-col gap-4 md:gap-6">
+        {/* Today's Question */}
+        <Card
+          loading={randomQuestionQuery.isLoading}
+          title={
+            <div className="flex items-center gap-2 flex-wrap">
+              <QuestionCircleOutlined className="text-purple-500" />
+              <span>{t('todayQuestion')}</span>
+              <Text type="secondary" className="ml-auto text-sm font-normal">
+                {dayjs().format('YYYY-MM-DD')}
+              </Text>
+            </div>
+          }
+        >
+          {randomQuestionQuery.error ? (
+            <div className="text-center py-4">
+              <Text type="danger">加载问题失败，请检查网络连接</Text>
+              <br />
+              <Button type="link" onClick={() => randomQuestionQuery.refetch()} className="mt-2">
+                重试
+              </Button>
+            </div>
+          ) : (
+            <>
+              <Paragraph className="mb-4 text-lg">{todayQuestion}</Paragraph>
 
-                <div className="space-y-4">
-                  <div>
-                    <Text strong className="mb-2 block">
-                      {t('yourAnswer')}
-                    </Text>
-                    <TextArea
-                      rows={4}
-                      placeholder={t('answerPlaceholder')}
-                      value={answer}
-                      onChange={(e) => setAnswer(e.target.value)}
-                      className="resize-none"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      type="primary"
-                      onClick={handleSubmit}
-                      loading={answerMutation.isPending}
-                    >
-                      {t('submitAnswer')}
-                    </Button>
-                    <Button onClick={getNextQuestion}>换一个问题</Button>
-                  </div>
-                </div>
-              </>
-            )}
-          </Card>
-        </div>
-
-        {/* Right: Answer History */}
-        <div className="w-full lg:w-80 lg:shrink-0 order-2">
-          <Card
-            title={t('history')}
-            loading={historyQuery.isLoading}
-            className="sticky top-6"
-            styles={{
-              body: { maxHeight: 'calc(100vh - 180px)', overflowY: 'auto', padding: '12px 16px' },
-            }}
-          >
-            {history.length === 0 ? (
-              <Empty description={tCommon('noData')} />
-            ) : (
               <div className="space-y-4">
-                {history.map((item) => (
-                  <div key={item.id}>
-                    <div className="flex items-center gap-2 mb-1">
-                      <Text type="secondary" className="text-xs">
-                        {item.date}
-                      </Text>
-                    </div>
-                    <Text className="text-sm text-gray-500 dark:text-gray-400 block mb-1">
-                      {item.question}
-                    </Text>
-                    {editingHistoryId === item.id ? (
-                      <div className="space-y-2">
-                        <Input.TextArea
-                          rows={2}
-                          value={editingHistoryAnswer}
-                          onChange={(e) => setEditingHistoryAnswer(e.target.value)}
-                          className="resize-none text-sm"
-                          autoFocus
-                          variant="borderless"
-                        />
-                        <div className="flex gap-2">
-                          <Button size="small" onClick={() => handleSaveHistoryEdit(item)}>
-                            保存
-                          </Button>
-                          <Button size="small" type="text" onClick={handleCancelHistoryEdit}>
-                            取消
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        className="text-sm cursor-pointer hover:text-primary-600 dark:hover:text-primary-400 transition-colors text-left bg-transparent border-0 p-0 w-full"
-                        onClick={() => handleEditHistory(item)}
-                      >
-                        {item.answer}
-                      </button>
-                    )}
-                  </div>
-                ))}
+                <div>
+                  <Text strong className="mb-2 block">
+                    {t('yourAnswer')}
+                  </Text>
+                  <TextArea
+                    rows={4}
+                    placeholder={t('answerPlaceholder')}
+                    value={answer}
+                    onChange={(e) => setAnswer(e.target.value)}
+                    className="resize-none"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button type="primary" onClick={handleSubmit} loading={answerMutation.isPending}>
+                    {t('submitAnswer')}
+                  </Button>
+                  <Button onClick={getNextQuestion}>换一个问题</Button>
+                </div>
               </div>
-            )}
-          </Card>
-        </div>
+            </>
+          )}
+        </Card>
+
+        {/* Answer History */}
+        <Card
+          title={t('history')}
+          loading={historyQuery.isLoading}
+          styles={{
+            body: { maxHeight: '400px', overflowY: 'auto', padding: '12px 16px' },
+          }}
+        >
+          {history.length === 0 ? (
+            <Empty description={tCommon('noData')} />
+          ) : (
+            <div className="space-y-4">
+              {history.map((item) => (
+                <div key={item.id}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Text type="secondary" className="text-xs">
+                      {item.date}
+                    </Text>
+                  </div>
+                  <Text className="text-sm text-gray-500 dark:text-gray-400 block mb-1">
+                    {item.question}
+                  </Text>
+                  {editingHistoryId === item.id ? (
+                    <div className="space-y-2">
+                      <Input.TextArea
+                        rows={2}
+                        value={editingHistoryAnswer}
+                        onChange={(e) => setEditingHistoryAnswer(e.target.value)}
+                        className="resize-none text-sm"
+                        autoFocus
+                        variant="borderless"
+                      />
+                      <div className="flex gap-2">
+                        <Button size="small" onClick={() => handleSaveHistoryEdit(item)}>
+                          保存
+                        </Button>
+                        <Button size="small" type="text" onClick={handleCancelHistoryEdit}>
+                          取消
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="text-sm cursor-pointer hover:text-primary-600 dark:hover:text-primary-400 transition-colors text-left bg-transparent border-0 p-0 w-full"
+                      onClick={() => handleEditHistory(item)}
+                    >
+                      {item.answer}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
       </div>
 
       {/* AI Settings Drawer */}
