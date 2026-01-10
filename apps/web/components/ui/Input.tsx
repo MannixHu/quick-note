@@ -1,6 +1,6 @@
 'use client'
 
-import { cn } from '@app/shared/utils/cn'
+import { cn } from '@app/shared'
 import { Input as AntInput, type InputProps as AntInputProps, type InputRef } from 'antd'
 import { motion } from 'framer-motion'
 import { forwardRef, useId, useState } from 'react'

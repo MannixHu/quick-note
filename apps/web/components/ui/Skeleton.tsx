@@ -1,6 +1,6 @@
 'use client'
 
-import { cn } from '@app/shared/utils/cn'
+import { cn } from '@app/shared'
 import { type HTMLMotionProps, motion } from 'framer-motion'
 
 export interface SkeletonProps extends Omit<HTMLMotionProps<'div'>, 'animate'> {

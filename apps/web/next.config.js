@@ -1,4 +1,5 @@
 const createNextIntlPlugin = require('next-intl/plugin')
+const path = require('node:path')
 
 const withNextIntl = createNextIntlPlugin('./lib/i18n/request.ts')
 
@@ -14,12 +15,17 @@ const nextConfig = {
 
   // Webpack optimizations
   webpack: (config, { isServer }) => {
+    // Add package aliases
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@app/shared': path.resolve(__dirname, '../../packages/shared/src'),
+      '@app/api': path.resolve(__dirname, '../../packages/api/src'),
+      '@app/db': path.resolve(__dirname, '../../packages/db/src'),
+    }
+
     // Only in client bundle, optimize Ant Design icons
     if (!isServer) {
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        '@ant-design/icons$': '@ant-design/icons/lib/icons',
-      }
+      config.resolve.alias['@ant-design/icons$'] = '@ant-design/icons/lib/icons'
     }
     return config
   },

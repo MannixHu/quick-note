@@ -1,11 +1,11 @@
 'use client'
 
-import { cn } from '@app/shared/utils/cn'
+import { cn } from '@app/shared'
 import { Button as AntButton, type ButtonProps as AntButtonProps } from 'antd'
 import { motion } from 'framer-motion'
 import { forwardRef } from 'react'
 
-export interface ButtonProps extends Omit<AntButtonProps, 'type'> {
+export interface ButtonProps extends Omit<AntButtonProps, 'type' | 'variant'> {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
   isLoading?: boolean
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { cn } from '@app/shared/utils/cn'
+import { cn } from '@app/shared'
 import { Card as AntCard, type CardProps as AntCardProps } from 'antd'
 import { type HTMLMotionProps, motion } from 'framer-motion'
 import type { ReactNode } from 'react'

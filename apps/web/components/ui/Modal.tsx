@@ -1,6 +1,6 @@
 'use client'
 
-import { cn } from '@app/shared/utils/cn'
+import { cn } from '@app/shared'
 import { Modal as AntModal, type ModalProps as AntModalProps } from 'antd'
 import { AnimatePresence, motion } from 'framer-motion'
 

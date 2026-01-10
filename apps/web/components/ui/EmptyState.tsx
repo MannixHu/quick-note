@@ -1,6 +1,6 @@
 'use client'
 
-import { cn } from '@app/shared/utils/cn'
+import { cn } from '@app/shared'
 import { motion } from 'framer-motion'
 import type { ReactNode } from 'react'
 
