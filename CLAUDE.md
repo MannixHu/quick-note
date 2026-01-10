@@ -286,5 +286,6 @@ const todayQ = await trpc.dailyQuestion.getTodayQuestionWithAI.query({
 
 ## 测试文件位置
 
-- 单元测试: 与源文件同目录，`*.test.ts(x)`
-- E2E 测试: `apps/web/e2e/`
+- 单元测试: `tests/unit/` 或与源文件同目录，`*.test.ts(x)`
+- 集成测试: `tests/integration/`
+- E2E 测试: `tests/e2e/`
