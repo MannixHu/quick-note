@@ -36,7 +36,7 @@ import { useEffect, useState } from 'react'
 
 dayjs.extend(dayOfYear)
 
-const { Title, Text, Paragraph } = Typography
+const { Text, Paragraph } = Typography
 const { TextArea } = Input
 
 const DEMO_USER_ID = 'demo-user-123'
@@ -360,9 +360,7 @@ export default function DailyQuestionPage() {
                     <span className="hidden sm:inline ml-2">{tCommon('back')}</span>
                   </Button>
                 </Link>
-                <Title level={4} className="!mb-0 md:!text-xl">
-                  {t('title')}
-                </Title>
+                <span className="text-lg md:text-xl font-semibold">{t('title')}</span>
                 {!isApiAvailable && <Tag color="orange">离线模式</Tag>}
               </div>
               <div className="flex items-center gap-1 md:gap-2">
