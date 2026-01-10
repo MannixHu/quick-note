@@ -2,11 +2,13 @@
 
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { ThemeSwitcher } from '@/components/theme-switcher'
+import { Button, FadeIn, PageTransition, SlideUp } from '@/components/ui'
 import { Link } from '@/lib/i18n/routing'
 import { trpc } from '@/lib/trpc/client'
 import { ArrowLeftOutlined, CheckOutlined, CopyOutlined, PlusOutlined } from '@ant-design/icons'
-import { App, Button, DatePicker, Input, Popover, Tag } from 'antd'
+import { Button as AntButton, App, DatePicker, Input, Popover, Tag } from 'antd'
 import dayjs from 'dayjs'
+import { motion } from 'framer-motion'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useState } from 'react'
 
@@ -298,250 +300,308 @@ export default function TimeBlocksPage() {
   }))
 
   return (
-    <main className="relative min-h-screen">
-      {/* Background */}
-      <div className="absolute inset-0 gradient-mesh opacity-50" />
+    <PageTransition>
+      <main className="relative min-h-screen">
+        {/* Background */}
+        <div className="absolute inset-0 gradient-mesh opacity-50" />
 
-      {/* Header */}
-      <header className="relative z-10 border-b border-gray-200/50 dark:border-gray-800/50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 md:px-6 py-3 md:py-4">
-          <div className="flex items-center gap-2 md:gap-4">
-            <Link href="/">
-              <Button
-                icon={<ArrowLeftOutlined />}
-                type="text"
-                className="!text-gray-600 dark:!text-gray-400 hover:!text-primary-600 !px-2 md:!px-4"
-              >
-                <span className="hidden sm:inline">{tCommon('back')}</span>
-              </Button>
-            </Link>
-            <div className="hidden sm:block">
-              <h1 className="font-display text-lg md:text-xl font-bold text-gray-900 dark:text-white">
-                {t('title')}
-              </h1>
-            </div>
-            {!isApiAvailable && (
-              <Tag color="orange" className="!m-0">
-                离线模式
-              </Tag>
-            )}
-          </div>
-          <div className="flex items-center gap-2 md:gap-3">
-            <LanguageSwitcher />
-            <ThemeSwitcher />
-          </div>
-        </div>
-      </header>
-
-      <div className="relative z-10 mx-auto max-w-6xl px-4 md:px-6 py-4 md:py-8">
-        <div className="grid gap-4 md:gap-8 lg:grid-cols-[1fr_320px]">
-          {/* Main content */}
-          <div className="space-y-4 md:space-y-6">
-            {/* Date & Actions */}
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <DatePicker
-                value={selectedDate}
-                onChange={(date) => date && setSelectedDate(date)}
-                allowClear={false}
-                className="!rounded-xl"
-                size="large"
-              />
-              <Button
-                icon={copied ? <CheckOutlined /> : <CopyOutlined />}
-                onClick={handleCopyText}
-                className="!rounded-xl"
-                type={copied ? 'primary' : 'default'}
-              >
-                {copied ? '已复制' : t('copyText')}
-              </Button>
-            </div>
-
-            {/* Category Selector */}
-            <div className="glass rounded-xl md:rounded-2xl p-4 md:p-6">
-              <div className="mb-4 flex items-center justify-between">
-                <span className="font-medium text-gray-700 dark:text-gray-300">
-                  {t('selectCategory')}
-                </span>
-                <Popover
-                  open={showAddCategory}
-                  onOpenChange={setShowAddCategory}
-                  trigger="click"
-                  content={
-                    <div className="w-64 space-y-4">
-                      <Input
-                        placeholder={t('categoryName')}
-                        value={newCategory.name}
-                        onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
-                        className="!rounded-lg"
-                      />
-                      <Input
-                        placeholder={t('categoryLabel')}
-                        value={newCategory.label}
-                        onChange={(e) => setNewCategory({ ...newCategory, label: e.target.value })}
-                        className="!rounded-lg"
-                      />
-                      <div className="flex items-center gap-3">
-                        <Input
-                          type="color"
-                          value={newCategory.color}
-                          onChange={(e) =>
-                            setNewCategory({ ...newCategory, color: e.target.value })
-                          }
-                          className="!h-10 !w-16 !rounded-lg !p-1"
-                        />
-                        <span className="text-sm text-gray-500">选择颜色</span>
-                      </div>
-                      <Button
-                        type="primary"
-                        block
-                        onClick={handleAddCategory}
-                        className="!rounded-lg"
-                      >
-                        {tCommon('confirm')}
-                      </Button>
-                    </div>
-                  }
-                >
+        {/* Header */}
+        <FadeIn delay={0.1}>
+          <header className="relative z-10 border-b border-gray-200/50 dark:border-gray-800/50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
+            <div className="mx-auto flex max-w-6xl items-center justify-between px-4 md:px-6 py-3 md:py-4">
+              <div className="flex items-center gap-2 md:gap-4">
+                <Link href="/">
                   <Button
-                    icon={<PlusOutlined />}
-                    type="text"
-                    size="small"
-                    className="!text-primary-600"
+                    variant="ghost"
+                    className="!text-gray-600 dark:!text-gray-400 hover:!text-primary-600 !px-2 md:!px-4"
                   >
-                    添加
+                    <ArrowLeftOutlined />
+                    <span className="hidden sm:inline ml-2">{tCommon('back')}</span>
                   </Button>
-                </Popover>
+                </Link>
+                <div className="hidden sm:block">
+                  <h1 className="font-display text-lg md:text-xl font-bold text-gray-900 dark:text-white">
+                    {t('title')}
+                  </h1>
+                </div>
+                {!isApiAvailable && (
+                  <Tag color="orange" className="!m-0">
+                    离线模式
+                  </Tag>
+                )}
               </div>
-              <div className="flex flex-wrap gap-2">
-                {categories.map((cat) => (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`
-                      relative rounded-full px-4 py-2 text-sm font-medium transition-all duration-200
-                      ${
-                        selectedCategory?.id === cat.id
-                          ? 'text-white shadow-lg scale-105'
-                          : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:scale-105'
-                      }
-                    `}
-                    style={{
-                      backgroundColor: selectedCategory?.id === cat.id ? cat.color : undefined,
-                      boxShadow:
-                        selectedCategory?.id === cat.id ? `0 4px 14px ${cat.color}40` : undefined,
-                    }}
-                  >
-                    {selectedCategory?.id === cat.id && <CheckOutlined className="mr-1.5" />}
-                    {cat.label}
-                  </button>
-                ))}
+              <div className="flex items-center gap-2 md:gap-3">
+                <LanguageSwitcher />
+                <ThemeSwitcher />
               </div>
             </div>
+          </header>
+        </FadeIn>
 
-            {/* Time Grid */}
-            <div className="glass rounded-xl md:rounded-2xl overflow-hidden">
-              <div className="grid grid-cols-[50px_1fr] md:grid-cols-[60px_1fr]">
-                {HOURS.map((hour) => {
-                  const block = getBlockForHour(hour)
-                  const isCurrentHour =
-                    dayjs().hour() === hour && selectedDate.isSame(dayjs(), 'day')
+        <div className="relative z-10 mx-auto max-w-6xl px-4 md:px-6 py-4 md:py-8">
+          <div className="grid gap-4 md:gap-8 lg:grid-cols-[1fr_320px]">
+            {/* Main content */}
+            <div className="space-y-4 md:space-y-6">
+              {/* Date & Actions */}
+              <SlideUp delay={0.2}>
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <DatePicker
+                    value={selectedDate}
+                    onChange={(date) => date && setSelectedDate(date)}
+                    allowClear={false}
+                    className="!rounded-xl"
+                    size="large"
+                  />
+                  <Button
+                    variant={copied ? 'primary' : 'secondary'}
+                    onClick={handleCopyText}
+                    className="!rounded-xl"
+                  >
+                    {copied ? <CheckOutlined /> : <CopyOutlined />}
+                    <span className="ml-2">{copied ? '已复制' : t('copyText')}</span>
+                  </Button>
+                </div>
+              </SlideUp>
 
-                  return (
-                    <div key={hour} className="contents">
-                      {/* Time Label */}
-                      <div
-                        className={`
-                          flex h-10 md:h-12 items-center justify-end border-b border-r border-gray-200/50 dark:border-gray-700/50 pr-2 md:pr-3 text-xs md:text-sm
-                          ${isCurrentHour ? 'bg-primary-50 dark:bg-primary-900/20 font-semibold text-primary-600' : 'text-gray-500'}
-                        `}
-                      >
-                        {`${hour.toString().padStart(2, '0')}:00`}
-                      </div>
-                      {/* Time Slot */}
-                      <button
-                        type="button"
-                        className={`
-                          relative flex h-10 md:h-12 w-full items-center border-b border-gray-200/50 dark:border-gray-700/50 px-2 md:px-4 text-left transition-all duration-200
-                          ${
+              {/* Category Selector */}
+              <SlideUp delay={0.3}>
+                <motion.div
+                  className="glass rounded-xl md:rounded-2xl p-4 md:p-6"
+                  whileHover={{ boxShadow: '0 10px 30px -10px rgba(0, 0, 0, 0.1)' }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <div className="mb-4 flex items-center justify-between">
+                    <span className="font-medium text-gray-700 dark:text-gray-300">
+                      {t('selectCategory')}
+                    </span>
+                    <Popover
+                      open={showAddCategory}
+                      onOpenChange={setShowAddCategory}
+                      trigger="click"
+                      content={
+                        <div className="w-64 space-y-4">
+                          <Input
+                            placeholder={t('categoryName')}
+                            value={newCategory.name}
+                            onChange={(e) =>
+                              setNewCategory({ ...newCategory, name: e.target.value })
+                            }
+                            className="!rounded-lg"
+                          />
+                          <Input
+                            placeholder={t('categoryLabel')}
+                            value={newCategory.label}
+                            onChange={(e) =>
+                              setNewCategory({ ...newCategory, label: e.target.value })
+                            }
+                            className="!rounded-lg"
+                          />
+                          <div className="flex items-center gap-3">
+                            <Input
+                              type="color"
+                              value={newCategory.color}
+                              onChange={(e) =>
+                                setNewCategory({ ...newCategory, color: e.target.value })
+                              }
+                              className="!h-10 !w-16 !rounded-lg !p-1"
+                            />
+                            <span className="text-sm text-gray-500">选择颜色</span>
+                          </div>
+                          <AntButton
+                            type="primary"
                             block
-                              ? 'text-white'
-                              : isCurrentHour
-                                ? 'bg-primary-50/50 dark:bg-primary-900/10 hover:bg-primary-100/50 dark:hover:bg-primary-900/20'
-                                : 'hover:bg-gray-100/50 dark:hover:bg-gray-800/50'
+                            onClick={handleAddCategory}
+                            className="!rounded-lg"
+                          >
+                            {tCommon('confirm')}
+                          </AntButton>
+                        </div>
+                      }
+                    >
+                      <AntButton
+                        icon={<PlusOutlined />}
+                        type="text"
+                        size="small"
+                        className="!text-primary-600"
+                      >
+                        添加
+                      </AntButton>
+                    </Popover>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {categories.map((cat) => (
+                      <motion.button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => setSelectedCategory(cat)}
+                        className={`
+                          relative rounded-full px-4 py-2 text-sm font-medium transition-colors duration-200
+                          ${
+                            selectedCategory?.id === cat.id
+                              ? 'text-white shadow-lg'
+                              : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
                           }
                         `}
                         style={{
-                          backgroundColor: block?.category.color,
+                          backgroundColor: selectedCategory?.id === cat.id ? cat.color : undefined,
+                          boxShadow:
+                            selectedCategory?.id === cat.id
+                              ? `0 4px 14px ${cat.color}40`
+                              : undefined,
                         }}
-                        onClick={() => handleTimeSlotClick(hour)}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 17 }}
                       >
-                        {block && (
-                          <span className="flex items-center gap-2 text-sm font-medium">
-                            <span className="h-2 w-2 rounded-full bg-white/50" />#
-                            {block.category.name}
-                          </span>
-                        )}
-                        {isCurrentHour && !block && (
-                          <span className="absolute right-3 h-2 w-2 rounded-full bg-primary-500 animate-pulse" />
-                        )}
-                      </button>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          </div>
+                        {selectedCategory?.id === cat.id && <CheckOutlined className="mr-1.5" />}
+                        {cat.label}
+                      </motion.button>
+                    ))}
+                  </div>
+                </motion.div>
+              </SlideUp>
 
-          {/* Sidebar */}
-          <div className="space-y-4 md:space-y-6">
-            {/* Stats */}
-            <div className="glass rounded-xl md:rounded-2xl p-4 md:p-6">
-              <h3 className="mb-3 md:mb-4 font-display text-base md:text-lg font-bold text-gray-900 dark:text-white">
-                今日统计
-              </h3>
-              <div className="mb-4 md:mb-6 text-center">
-                <div className="font-display text-4xl md:text-5xl font-bold gradient-text">
-                  {totalHours}
+              {/* Time Grid */}
+              <SlideUp delay={0.4}>
+                <div className="glass rounded-xl md:rounded-2xl overflow-hidden">
+                  <div className="grid grid-cols-[50px_1fr] md:grid-cols-[60px_1fr]">
+                    {HOURS.map((hour) => {
+                      const block = getBlockForHour(hour)
+                      const isCurrentHour =
+                        dayjs().hour() === hour && selectedDate.isSame(dayjs(), 'day')
+
+                      return (
+                        <div key={hour} className="contents">
+                          {/* Time Label */}
+                          <div
+                            className={`
+                              flex h-10 md:h-12 items-center justify-end border-b border-r border-gray-200/50 dark:border-gray-700/50 pr-2 md:pr-3 text-xs md:text-sm
+                              ${isCurrentHour ? 'bg-primary-50 dark:bg-primary-900/20 font-semibold text-primary-600' : 'text-gray-500'}
+                            `}
+                          >
+                            {`${hour.toString().padStart(2, '0')}:00`}
+                          </div>
+                          {/* Time Slot */}
+                          <motion.button
+                            type="button"
+                            className={`
+                              relative flex h-10 md:h-12 w-full items-center border-b border-gray-200/50 dark:border-gray-700/50 px-2 md:px-4 text-left transition-colors duration-200
+                              ${
+                                block
+                                  ? 'text-white'
+                                  : isCurrentHour
+                                    ? 'bg-primary-50/50 dark:bg-primary-900/10'
+                                    : ''
+                              }
+                            `}
+                            style={{
+                              backgroundColor: block?.category.color,
+                            }}
+                            onClick={() => handleTimeSlotClick(hour)}
+                            whileHover={{
+                              backgroundColor: block
+                                ? block.category.color
+                                : 'rgba(99, 102, 241, 0.1)',
+                            }}
+                            whileTap={{ scale: 0.995 }}
+                          >
+                            {block && (
+                              <span className="flex items-center gap-2 text-sm font-medium">
+                                <span className="h-2 w-2 rounded-full bg-white/50" />#
+                                {block.category.name}
+                              </span>
+                            )}
+                            {isCurrentHour && !block && (
+                              <motion.span
+                                className="absolute right-3 h-2 w-2 rounded-full bg-primary-500"
+                                animate={{ opacity: [1, 0.4, 1] }}
+                                transition={{ duration: 1.5, repeat: Number.POSITIVE_INFINITY }}
+                              />
+                            )}
+                          </motion.button>
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
-                <div className="mt-1 text-sm text-gray-500">小时已记录</div>
-              </div>
-              <div className="space-y-3">
-                {categoryStats
-                  .filter((c) => c.hours > 0)
-                  .map((cat) => (
-                    <div key={cat.id} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="h-3 w-3 rounded-full"
-                          style={{ backgroundColor: cat.color }}
-                        />
-                        <span className="text-sm text-gray-700 dark:text-gray-300">
-                          {cat.label}
-                        </span>
-                      </div>
-                      <span className="font-medium text-gray-900 dark:text-white">
-                        {cat.hours}h
-                      </span>
-                    </div>
-                  ))}
-              </div>
+              </SlideUp>
             </div>
 
-            {/* Generated Text Preview */}
-            {blocks.length > 0 && (
-              <div className="glass rounded-xl md:rounded-2xl p-4 md:p-6">
-                <h3 className="mb-3 md:mb-4 font-display text-base md:text-lg font-bold text-gray-900 dark:text-white">
-                  {t('generateText')}
-                </h3>
-                <pre className="whitespace-pre-wrap rounded-xl bg-gray-100/50 dark:bg-gray-800/50 p-4 text-sm font-mono text-gray-700 dark:text-gray-300">
-                  {generateText()}
-                </pre>
-              </div>
-            )}
+            {/* Sidebar */}
+            <div className="space-y-4 md:space-y-6">
+              {/* Stats */}
+              <SlideUp delay={0.3}>
+                <motion.div
+                  className="glass rounded-xl md:rounded-2xl p-4 md:p-6"
+                  whileHover={{ boxShadow: '0 15px 40px -10px rgba(0, 0, 0, 0.1)' }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <h3 className="mb-3 md:mb-4 font-display text-base md:text-lg font-bold text-gray-900 dark:text-white">
+                    今日统计
+                  </h3>
+                  <div className="mb-4 md:mb-6 text-center">
+                    <motion.div
+                      className="font-display text-4xl md:text-5xl font-bold gradient-text"
+                      key={totalHours}
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                    >
+                      {totalHours}
+                    </motion.div>
+                    <div className="mt-1 text-sm text-gray-500">小时已记录</div>
+                  </div>
+                  <div className="space-y-3">
+                    {categoryStats
+                      .filter((c) => c.hours > 0)
+                      .map((cat) => (
+                        <motion.div
+                          key={cat.id}
+                          className="flex items-center justify-between"
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="h-3 w-3 rounded-full"
+                              style={{ backgroundColor: cat.color }}
+                            />
+                            <span className="text-sm text-gray-700 dark:text-gray-300">
+                              {cat.label}
+                            </span>
+                          </div>
+                          <span className="font-medium text-gray-900 dark:text-white">
+                            {cat.hours}h
+                          </span>
+                        </motion.div>
+                      ))}
+                  </div>
+                </motion.div>
+              </SlideUp>
+
+              {/* Generated Text Preview */}
+              {blocks.length > 0 && (
+                <SlideUp delay={0.5}>
+                  <motion.div
+                    className="glass rounded-xl md:rounded-2xl p-4 md:p-6"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <h3 className="mb-3 md:mb-4 font-display text-base md:text-lg font-bold text-gray-900 dark:text-white">
+                      {t('generateText')}
+                    </h3>
+                    <pre className="whitespace-pre-wrap rounded-xl bg-gray-100/50 dark:bg-gray-800/50 p-4 text-sm font-mono text-gray-700 dark:text-gray-300">
+                      {generateText()}
+                    </pre>
+                  </motion.div>
+                </SlideUp>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </PageTransition>
   )
 }

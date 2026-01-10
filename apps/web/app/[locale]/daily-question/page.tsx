@@ -2,6 +2,7 @@
 
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { ThemeSwitcher } from '@/components/theme-switcher'
+import { Button, FadeIn, PageTransition, SlideUp } from '@/components/ui'
 import { Link } from '@/lib/i18n/routing'
 import { trpc } from '@/lib/trpc/client'
 import {
@@ -14,8 +15,8 @@ import {
   ThunderboltOutlined,
 } from '@ant-design/icons'
 import {
+  Button as AntButton,
   App,
-  Button,
   Card,
   Drawer,
   Empty,
@@ -29,6 +30,7 @@ import {
 } from 'antd'
 import dayjs from 'dayjs'
 import dayOfYear from 'dayjs/plugin/dayOfYear'
+import { motion } from 'framer-motion'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 
@@ -316,247 +318,331 @@ export default function DailyQuestionPage() {
   }
 
   return (
-    <main className="min-h-screen p-4 md:p-6">
-      {/* Header */}
-      <header className="mb-4 md:mb-6 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2 md:gap-4">
-          <Link href="/">
-            <Button icon={<ArrowLeftOutlined />} type="text" className="!px-2 md:!px-4">
-              <span className="hidden sm:inline">{tCommon('back')}</span>
-            </Button>
-          </Link>
-          <Title level={4} className="!mb-0 md:!text-xl">
-            {t('title')}
-          </Title>
-          {!isApiAvailable && <Tag color="orange">离线模式</Tag>}
-        </div>
-        <div className="flex items-center gap-1 md:gap-2">
-          <Tooltip title="AI 生成问题">
-            <Button
-              icon={<ThunderboltOutlined />}
-              onClick={handleGenerateQuestions}
-              loading={generateAIMutation.isPending}
-              disabled={!aiConfig}
-              size="middle"
-            />
-          </Tooltip>
-          <Tooltip title="AI 设置">
-            <Button
-              icon={<SettingOutlined />}
-              onClick={() => setSettingsOpen(true)}
-              type={aiConfig ? 'default' : 'primary'}
-              size="middle"
-            />
-          </Tooltip>
-          <LanguageSwitcher />
-          <ThemeSwitcher />
-        </div>
-      </header>
+    <PageTransition>
+      <main className="relative min-h-screen">
+        {/* Background */}
+        <div className="absolute inset-0 gradient-mesh opacity-50" />
 
-      <div className="mx-auto max-w-3xl flex flex-col gap-4 md:gap-6">
-        {/* Today's Question */}
-        <Card
-          loading={randomQuestionQuery.isLoading}
-          title={
-            <div className="flex items-center gap-2 flex-wrap">
-              <QuestionCircleOutlined className="text-purple-500" />
-              <span>{t('todayQuestion')}</span>
-              <Text type="secondary" className="ml-auto text-sm font-normal">
-                {dayjs().format('YYYY-MM-DD')}
-              </Text>
-            </div>
-          }
-        >
-          {randomQuestionQuery.error ? (
-            <div className="text-center py-4">
-              <Text type="danger">加载问题失败，请检查网络连接</Text>
-              <br />
-              <Button type="link" onClick={() => randomQuestionQuery.refetch()} className="mt-2">
-                重试
-              </Button>
-            </div>
-          ) : (
-            <>
-              <Paragraph className="mb-4 text-lg">{todayQuestion}</Paragraph>
-
-              <div className="space-y-4">
-                <div>
-                  <Text strong className="mb-2 block">
-                    {t('yourAnswer')}
-                  </Text>
-                  <TextArea
-                    rows={4}
-                    placeholder={t('answerPlaceholder')}
-                    value={answer}
-                    onChange={(e) => setAnswer(e.target.value)}
-                    className="resize-none"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button type="primary" onClick={handleSubmit} loading={answerMutation.isPending}>
-                    {t('submitAnswer')}
-                  </Button>
-                  <Button onClick={getNextQuestion}>换一个问题</Button>
-                </div>
-              </div>
-            </>
-          )}
-        </Card>
-
-        {/* Answer History */}
-        <Card
-          title={t('history')}
-          loading={historyQuery.isLoading}
-          styles={{
-            body: { maxHeight: '400px', overflowY: 'auto', padding: '12px 16px' },
+        {/* Animated background orbs */}
+        <motion.div
+          className="absolute left-1/4 top-1/3 h-72 w-72 rounded-full bg-purple-500/15 blur-3xl"
+          animate={{
+            scale: [1, 1.15, 1],
+            opacity: [0.15, 0.25, 0.15],
           }}
-        >
-          {history.length === 0 ? (
-            <Empty description={tCommon('noData')} />
-          ) : (
-            <div className="space-y-4">
-              {history.map((item) => (
-                <div key={item.id}>
-                  <div className="flex items-center gap-2 mb-1">
-                    <Text type="secondary" className="text-xs">
-                      {item.date}
+          transition={{ duration: 6, repeat: Number.POSITIVE_INFINITY, ease: 'easeInOut' }}
+        />
+        <motion.div
+          className="absolute bottom-1/4 right-1/4 h-64 w-64 rounded-full bg-primary-500/10 blur-3xl"
+          animate={{
+            scale: [1.1, 1, 1.1],
+            opacity: [0.1, 0.2, 0.1],
+          }}
+          transition={{
+            duration: 5,
+            repeat: Number.POSITIVE_INFINITY,
+            ease: 'easeInOut',
+            delay: 1.5,
+          }}
+        />
+
+        {/* Header */}
+        <FadeIn delay={0.1}>
+          <header className="relative z-10 border-b border-gray-200/50 dark:border-gray-800/50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
+            <div className="mx-auto flex max-w-3xl items-center justify-between px-4 md:px-6 py-3 md:py-4">
+              <div className="flex items-center gap-2 md:gap-4">
+                <Link href="/">
+                  <Button
+                    variant="ghost"
+                    className="!text-gray-600 dark:!text-gray-400 hover:!text-primary-600 !px-2 md:!px-4"
+                  >
+                    <ArrowLeftOutlined />
+                    <span className="hidden sm:inline ml-2">{tCommon('back')}</span>
+                  </Button>
+                </Link>
+                <Title level={4} className="!mb-0 md:!text-xl">
+                  {t('title')}
+                </Title>
+                {!isApiAvailable && <Tag color="orange">离线模式</Tag>}
+              </div>
+              <div className="flex items-center gap-1 md:gap-2">
+                <Tooltip title="AI 生成问题">
+                  <AntButton
+                    icon={<ThunderboltOutlined />}
+                    onClick={handleGenerateQuestions}
+                    loading={generateAIMutation.isPending}
+                    disabled={!aiConfig}
+                    size="middle"
+                  />
+                </Tooltip>
+                <Tooltip title="AI 设置">
+                  <AntButton
+                    icon={<SettingOutlined />}
+                    onClick={() => setSettingsOpen(true)}
+                    type={aiConfig ? 'default' : 'primary'}
+                    size="middle"
+                  />
+                </Tooltip>
+                <LanguageSwitcher />
+                <ThemeSwitcher />
+              </div>
+            </div>
+          </header>
+        </FadeIn>
+
+        <div className="relative z-10 mx-auto max-w-3xl px-4 md:px-6 py-4 md:py-8 flex flex-col gap-4 md:gap-6">
+          {/* Today's Question */}
+          <SlideUp delay={0.2}>
+            <motion.div
+              whileHover={{ boxShadow: '0 15px 40px -10px rgba(0, 0, 0, 0.1)' }}
+              transition={{ duration: 0.2 }}
+            >
+              <Card
+                loading={randomQuestionQuery.isLoading}
+                className="glass !rounded-xl md:!rounded-2xl"
+                title={
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <QuestionCircleOutlined className="text-purple-500" />
+                    <span>{t('todayQuestion')}</span>
+                    <Text type="secondary" className="ml-auto text-sm font-normal">
+                      {dayjs().format('YYYY-MM-DD')}
                     </Text>
                   </div>
-                  <Text className="text-sm text-gray-500 dark:text-gray-400 block mb-1">
-                    {item.question}
-                  </Text>
-                  {editingHistoryId === item.id ? (
-                    <div className="space-y-2">
-                      <Input.TextArea
-                        rows={2}
-                        value={editingHistoryAnswer}
-                        onChange={(e) => setEditingHistoryAnswer(e.target.value)}
-                        className="resize-none text-sm"
-                        autoFocus
-                        variant="borderless"
-                      />
+                }
+              >
+                {randomQuestionQuery.error ? (
+                  <div className="text-center py-4">
+                    <Text type="danger">加载问题失败，请检查网络连接</Text>
+                    <br />
+                    <AntButton
+                      type="link"
+                      onClick={() => randomQuestionQuery.refetch()}
+                      className="mt-2"
+                    >
+                      重试
+                    </AntButton>
+                  </div>
+                ) : (
+                  <>
+                    <motion.div
+                      key={todayQuestion}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4 }}
+                    >
+                      <Paragraph className="mb-4 text-lg">{todayQuestion}</Paragraph>
+                    </motion.div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <Text strong className="mb-2 block">
+                          {t('yourAnswer')}
+                        </Text>
+                        <TextArea
+                          rows={4}
+                          placeholder={t('answerPlaceholder')}
+                          value={answer}
+                          onChange={(e) => setAnswer(e.target.value)}
+                          className="resize-none !rounded-xl"
+                        />
+                      </div>
                       <div className="flex gap-2">
-                        <Button size="small" onClick={() => handleSaveHistoryEdit(item)}>
-                          保存
+                        <Button
+                          variant="primary"
+                          onClick={handleSubmit}
+                          isLoading={answerMutation.isPending}
+                          className="!rounded-xl"
+                        >
+                          {t('submitAnswer')}
                         </Button>
-                        <Button size="small" type="text" onClick={handleCancelHistoryEdit}>
-                          取消
+                        <Button
+                          variant="secondary"
+                          onClick={getNextQuestion}
+                          className="!rounded-xl"
+                        >
+                          换一个问题
                         </Button>
                       </div>
                     </div>
-                  ) : (
-                    <button
-                      type="button"
-                      className="text-sm cursor-pointer hover:text-primary-600 dark:hover:text-primary-400 transition-colors text-left bg-transparent border-0 p-0 w-full"
-                      onClick={() => handleEditHistory(item)}
-                    >
-                      {item.answer}
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </Card>
-      </div>
-
-      {/* AI Settings Drawer */}
-      <Drawer
-        title="AI 配置"
-        open={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-        styles={{ wrapper: { width: 400 } }}
-      >
-        <Form form={settingsForm} layout="vertical" onFinish={handleSaveSettings}>
-          <Form.Item
-            name="provider"
-            label="AI 服务商"
-            rules={[{ required: true, message: '请选择服务商' }]}
-          >
-            <Radio.Group>
-              <Radio.Button value="openrouter">OpenRouter</Radio.Button>
-              <Radio.Button value="deepseek">DeepSeek</Radio.Button>
-            </Radio.Group>
-          </Form.Item>
-
-          <Form.Item
-            name="apiKey"
-            label="API Key"
-            rules={[{ required: true, message: '请输入 API Key' }]}
-          >
-            <Input.Password placeholder="sk-..." />
-          </Form.Item>
-
-          <Form.Item name="model" label="模型 (可选)">
-            <Input placeholder="默认: Claude 3.5 / DeepSeek Chat" />
-          </Form.Item>
-
-          {/* Ping Test */}
-          <div className="mb-4 flex items-center gap-2">
-            <Button
-              icon={<ApiOutlined />}
-              onClick={handlePingTest}
-              loading={pingAIMutation.isPending}
-            >
-              测试连接
-            </Button>
-            {pingAIMutation.isPending && <Spin size="small" />}
-            {pingResult && (
-              <span className="flex items-center gap-1 text-sm">
-                {pingResult.success ? (
-                  <>
-                    <CheckCircleOutlined className="text-green-500" />
-                    <span className="text-green-600">{pingResult.latency}ms</span>
-                  </>
-                ) : (
-                  <>
-                    <CloseCircleOutlined className="text-red-500" />
-                    <span className="text-red-500 truncate max-w-[180px]" title={pingResult.error}>
-                      {pingResult.error}
-                    </span>
                   </>
                 )}
-              </span>
-            )}
-          </div>
+              </Card>
+            </motion.div>
+          </SlideUp>
 
-          <Form.Item>
-            <Button type="primary" htmlType="submit" block>
-              保存配置
-            </Button>
-          </Form.Item>
-        </Form>
-
-        <div className="mt-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
-          <Text strong className="mb-2 block">
-            获取 API Key
-          </Text>
-          <div className="space-y-2 text-sm">
-            <div>
-              <Text type="secondary">OpenRouter: </Text>
-              <a
-                href="https://openrouter.ai/keys"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-500"
+          {/* Answer History */}
+          <SlideUp delay={0.3}>
+            <motion.div
+              whileHover={{ boxShadow: '0 10px 30px -10px rgba(0, 0, 0, 0.1)' }}
+              transition={{ duration: 0.2 }}
+            >
+              <Card
+                title={t('history')}
+                loading={historyQuery.isLoading}
+                className="glass !rounded-xl md:!rounded-2xl"
+                styles={{
+                  body: { maxHeight: '400px', overflowY: 'auto', padding: '12px 16px' },
+                }}
               >
-                openrouter.ai/keys
-              </a>
-            </div>
-            <div>
-              <Text type="secondary">DeepSeek: </Text>
-              <a
-                href="https://platform.deepseek.com/api_keys"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-500"
-              >
-                platform.deepseek.com
-              </a>
-            </div>
-          </div>
+                {history.length === 0 ? (
+                  <Empty description={tCommon('noData')} />
+                ) : (
+                  <div className="space-y-4">
+                    {history.map((item, index) => (
+                      <motion.div
+                        key={item.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <Text type="secondary" className="text-xs">
+                            {item.date}
+                          </Text>
+                        </div>
+                        <Text className="text-sm text-gray-500 dark:text-gray-400 block mb-1">
+                          {item.question}
+                        </Text>
+                        {editingHistoryId === item.id ? (
+                          <div className="space-y-2">
+                            <Input.TextArea
+                              rows={2}
+                              value={editingHistoryAnswer}
+                              onChange={(e) => setEditingHistoryAnswer(e.target.value)}
+                              className="resize-none text-sm"
+                              autoFocus
+                              variant="borderless"
+                            />
+                            <div className="flex gap-2">
+                              <AntButton size="small" onClick={() => handleSaveHistoryEdit(item)}>
+                                保存
+                              </AntButton>
+                              <AntButton size="small" type="text" onClick={handleCancelHistoryEdit}>
+                                取消
+                              </AntButton>
+                            </div>
+                          </div>
+                        ) : (
+                          <motion.button
+                            type="button"
+                            className="text-sm cursor-pointer hover:text-primary-600 dark:hover:text-primary-400 transition-colors text-left bg-transparent border-0 p-0 w-full"
+                            onClick={() => handleEditHistory(item)}
+                            whileHover={{ x: 4 }}
+                            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                          >
+                            {item.answer}
+                          </motion.button>
+                        )}
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            </motion.div>
+          </SlideUp>
         </div>
-      </Drawer>
-    </main>
+
+        {/* AI Settings Drawer */}
+        <Drawer
+          title="AI 配置"
+          open={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+          styles={{ wrapper: { width: 400 } }}
+        >
+          <Form form={settingsForm} layout="vertical" onFinish={handleSaveSettings}>
+            <Form.Item
+              name="provider"
+              label="AI 服务商"
+              rules={[{ required: true, message: '请选择服务商' }]}
+            >
+              <Radio.Group>
+                <Radio.Button value="openrouter">OpenRouter</Radio.Button>
+                <Radio.Button value="deepseek">DeepSeek</Radio.Button>
+              </Radio.Group>
+            </Form.Item>
+
+            <Form.Item
+              name="apiKey"
+              label="API Key"
+              rules={[{ required: true, message: '请输入 API Key' }]}
+            >
+              <Input.Password placeholder="sk-..." />
+            </Form.Item>
+
+            <Form.Item name="model" label="模型 (可选)">
+              <Input placeholder="默认: Claude 3.5 / DeepSeek Chat" />
+            </Form.Item>
+
+            {/* Ping Test */}
+            <div className="mb-4 flex items-center gap-2">
+              <AntButton
+                icon={<ApiOutlined />}
+                onClick={handlePingTest}
+                loading={pingAIMutation.isPending}
+              >
+                测试连接
+              </AntButton>
+              {pingAIMutation.isPending && <Spin size="small" />}
+              {pingResult && (
+                <span className="flex items-center gap-1 text-sm">
+                  {pingResult.success ? (
+                    <>
+                      <CheckCircleOutlined className="text-green-500" />
+                      <span className="text-green-600">{pingResult.latency}ms</span>
+                    </>
+                  ) : (
+                    <>
+                      <CloseCircleOutlined className="text-red-500" />
+                      <span
+                        className="text-red-500 truncate max-w-[180px]"
+                        title={pingResult.error}
+                      >
+                        {pingResult.error}
+                      </span>
+                    </>
+                  )}
+                </span>
+              )}
+            </div>
+
+            <Form.Item>
+              <AntButton type="primary" htmlType="submit" block>
+                保存配置
+              </AntButton>
+            </Form.Item>
+          </Form>
+
+          <div className="mt-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
+            <Text strong className="mb-2 block">
+              获取 API Key
+            </Text>
+            <div className="space-y-2 text-sm">
+              <div>
+                <Text type="secondary">OpenRouter: </Text>
+                <a
+                  href="https://openrouter.ai/keys"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500"
+                >
+                  openrouter.ai/keys
+                </a>
+              </div>
+              <div>
+                <Text type="secondary">DeepSeek: </Text>
+                <a
+                  href="https://platform.deepseek.com/api_keys"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500"
+                >
+                  platform.deepseek.com
+                </a>
+              </div>
+            </div>
+          </div>
+        </Drawer>
+      </main>
+    </PageTransition>
   )
 }
