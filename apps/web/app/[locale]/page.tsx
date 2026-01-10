@@ -70,38 +70,38 @@ export default function HomePage() {
         </FadeIn>
 
         {/* Main Content */}
-        <div className="relative flex min-h-[calc(100vh-80px)] flex-col items-center justify-center px-4 md:px-6 py-8 md:py-12">
+        <div className="relative flex h-[calc(100vh-56px)] flex-col items-center justify-center px-4 md:px-6 py-4">
           {/* Hero */}
-          <FadeIn delay={0.2} className="mb-8 md:mb-12 text-center max-w-2xl">
-            <h1 className="font-display text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white md:text-5xl mb-4">
+          <FadeIn delay={0.2} className="mb-6 text-center max-w-2xl">
+            <h1 className="font-display text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white md:text-4xl mb-2">
               每天一个问题
             </h1>
-            <h2 className="font-display text-xl sm:text-2xl text-gray-600 dark:text-gray-300 md:text-3xl mb-6">
+            <h2 className="font-display text-lg sm:text-xl text-gray-600 dark:text-gray-300 md:text-2xl mb-3">
               发现更好的自己
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 text-lg leading-relaxed">
+            <p className="text-gray-600 dark:text-gray-400 text-sm md:text-base leading-relaxed">
               AI 驱动的深度思考问题，帮助你进行自我反思和成长。
-              <br className="hidden sm:block" />
-              每次回答，都是与自己的一次对话。
             </p>
           </FadeIn>
 
           {/* Features */}
-          <FadeIn delay={0.3} className="mb-8 md:mb-12 w-full max-w-3xl">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <FadeIn delay={0.3} className="mb-6 w-full max-w-3xl">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {features.map((feature, index) => (
                 <motion.div
                   key={feature.title}
-                  className="glass rounded-xl p-4 text-center"
+                  className="glass rounded-xl p-3 text-center"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 + index * 0.1 }}
                 >
-                  <div className="mb-2 text-purple-500">{feature.icon}</div>
-                  <h3 className="font-medium text-gray-900 dark:text-white text-sm mb-1">
+                  <div className="mb-1.5 text-purple-500">{feature.icon}</div>
+                  <h3 className="font-medium text-gray-900 dark:text-white text-sm mb-0.5">
                     {feature.title}
                   </h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{feature.description}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-tight">
+                    {feature.description}
+                  </p>
                 </motion.div>
               ))}
             </div>
@@ -109,11 +109,20 @@ export default function HomePage() {
 
           {/* CTA */}
           <FadeIn delay={0.6}>
-            <div className="flex flex-col sm:flex-row items-center gap-4">
+            <div className="flex flex-col items-center gap-3">
               <Link href="/daily_question">
-                <Button variant="primary" className="!px-8 !py-3 !text-lg !rounded-xl">
-                  {isAuthenticated ? '进入问答' : '开始探索'}
-                </Button>
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.98 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                >
+                  <Button
+                    variant="primary"
+                    className="!px-12 !py-4 !text-xl !rounded-2xl !font-semibold shadow-lg shadow-primary-500/30"
+                  >
+                    {isAuthenticated ? '进入问答 →' : '开始探索 →'}
+                  </Button>
+                </motion.div>
               </Link>
               {!isAuthenticated && (
                 <div className="flex items-center gap-3 text-sm text-gray-500">
