@@ -155,7 +155,7 @@ export function DashboardPanel({
 
         {/* Review Link */}
         <Link
-          href={`/${locale}/daily-question/review`}
+          href={`/${locale}/daily_question/review`}
           className="flex items-center gap-1 text-sm text-primary-500 hover:text-primary-600 transition-colors group"
         >
           <span>查看回顾</span>

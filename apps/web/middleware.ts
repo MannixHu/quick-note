@@ -5,7 +5,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 const intlMiddleware = createMiddleware(routing)
 
 // 需要认证的路由
-const protectedRoutes = ['/time-blocks', '/daily-question']
+const protectedRoutes = ['/daily_question']
 
 export default function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -30,7 +30,7 @@ export default function middleware(request: NextRequest) {
   // 已登录访问登录页，重定向到每日问答
   if (authToken && pathnameWithoutLocale === '/login') {
     const locale = pathname.match(/^\/(zh-CN|en)/)?.[1] || ''
-    const homeUrl = new URL(locale ? `/${locale}/daily-question` : '/daily-question', request.url)
+    const homeUrl = new URL(locale ? `/${locale}/daily_question` : '/daily_question', request.url)
     return NextResponse.redirect(homeUrl)
   }
 

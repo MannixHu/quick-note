@@ -842,9 +842,7 @@ export const dailyQuestionRouter = createTRPCRouter({
             },
           })
 
-          console.log(
-            `[AI生成] 用户 ${input.userId} 有 ${highRatedQuestions.length} 个高评分问题`
-          )
+          console.log(`[AI生成] 用户 ${input.userId} 有 ${highRatedQuestions.length} 个高评分问题`)
 
           if (highRatedQuestions.length >= 3) {
             // 至少有 3 个高评分问题才使用偏好
@@ -882,7 +880,7 @@ export const dailyQuestionRouter = createTRPCRouter({
               )
             }
           } else {
-            console.log(`[AI生成] 高评分问题不足3个，跳过偏好`)
+            console.log('[AI生成] 高评分问题不足3个，跳过偏好')
           }
         }
 

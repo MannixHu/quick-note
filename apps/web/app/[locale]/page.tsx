@@ -2,25 +2,22 @@
 
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { ThemeSwitcher } from '@/components/theme-switcher'
-import { Button, FadeIn, PageTransition, StaggerChildren } from '@/components/ui'
+import { Button, FadeIn, PageTransition } from '@/components/ui'
 import { useAuth } from '@/hooks'
 import { Link, useRouter } from '@/lib/i18n/routing'
-import { ClockCircleOutlined, LogoutOutlined, QuestionCircleOutlined } from '@ant-design/icons'
-import { App, Spin } from 'antd'
+import { BulbOutlined, HeartOutlined, RiseOutlined, RobotOutlined } from '@ant-design/icons'
+import { Spin } from 'antd'
 import { motion } from 'framer-motion'
-import { useTranslations } from 'next-intl'
 import { useEffect } from 'react'
 
 export default function HomePage() {
-  const { message } = App.useApp()
-  const t = useTranslations('home')
   const router = useRouter()
-  const { isAuthenticated, isLoading, logout } = useAuth()
+  const { isAuthenticated, isLoading } = useAuth()
 
-  // Redirect authenticated users to daily-question
+  // Redirect authenticated users to dailyQuestion
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      router.replace('/daily-question')
+      router.replace('/daily_question')
     }
   }, [isLoading, isAuthenticated, router])
 
@@ -35,31 +32,26 @@ export default function HomePage() {
     )
   }
 
-  const handleLogout = () => {
-    logout()
-    message.success('已退出登录')
-  }
-
-  const modules = [
+  const features = [
     {
-      icon: <ClockCircleOutlined className="text-4xl" />,
-      title: t('features.timeBlock'),
-      description: t('features.timeBlockDesc'),
-      href: '/time-blocks',
-      gradient: 'from-blue-500 to-indigo-600',
-      bgColor: 'bg-blue-500/10 dark:bg-blue-500/20',
-      iconColor: 'text-blue-500',
-      hoverBg: 'hover:bg-blue-500/5',
+      icon: <BulbOutlined className="text-2xl" />,
+      title: '深度思考',
+      description: 'AI 生成的问题帮助你探索内心',
     },
     {
-      icon: <QuestionCircleOutlined className="text-4xl" />,
-      title: t('features.dailyQuestion'),
-      description: t('features.dailyQuestionDesc'),
-      href: '/daily-question',
-      gradient: 'from-purple-500 to-pink-600',
-      bgColor: 'bg-purple-500/10 dark:bg-purple-500/20',
-      iconColor: 'text-purple-500',
-      hoverBg: 'hover:bg-purple-500/5',
+      icon: <RobotOutlined className="text-2xl" />,
+      title: '个性推荐',
+      description: '根据评分偏好，推荐你喜欢的问题类型',
+    },
+    {
+      icon: <RiseOutlined className="text-2xl" />,
+      title: '成长追踪',
+      description: '回顾历史回答，见证思考的成长',
+    },
+    {
+      icon: <HeartOutlined className="text-2xl" />,
+      title: '防止茧房',
+      description: '30% 随机探索，拓展思维边界',
     },
   ]
 
@@ -77,102 +69,62 @@ export default function HomePage() {
               whileHover={{ scale: 1.05 }}
               transition={{ type: 'spring', stiffness: 400, damping: 17 }}
             >
-              快记
+              每日问答
             </motion.div>
             <div className="flex items-center gap-2 md:gap-3">
               <LanguageSwitcher />
               <ThemeSwitcher />
-              {isAuthenticated && (
-                <Button variant="ghost" onClick={handleLogout} className="!text-gray-500">
-                  <LogoutOutlined />
-                  <span className="ml-1">退出</span>
-                </Button>
-              )}
             </div>
           </header>
         </FadeIn>
 
         {/* Main Content */}
         <div className="relative flex min-h-[calc(100vh-80px)] flex-col items-center justify-center px-4 md:px-6 py-8 md:py-12">
-          {/* Welcome text */}
-          <FadeIn delay={0.2} className="mb-8 md:mb-12 text-center">
-            <h1 className="font-display text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white md:text-5xl">
-              {isAuthenticated ? '欢迎回来' : t('title')}
+          {/* Hero */}
+          <FadeIn delay={0.2} className="mb-8 md:mb-12 text-center max-w-2xl">
+            <h1 className="font-display text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white md:text-5xl mb-4">
+              每天一个问题
             </h1>
-            <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">
-              {isAuthenticated ? '选择一个模块开始' : t('description')}
+            <h2 className="font-display text-xl sm:text-2xl text-gray-600 dark:text-gray-300 md:text-3xl mb-6">
+              发现更好的自己
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 text-lg leading-relaxed">
+              AI 驱动的深度思考问题，帮助你进行自我反思和成长。
+              <br className="hidden sm:block" />
+              每次回答，都是与自己的一次对话。
             </p>
           </FadeIn>
 
-          {/* Module Cards - Quick Access */}
-          <StaggerChildren
-            staggerDelay={0.15}
-            className="grid w-full max-w-3xl gap-4 md:gap-6 md:grid-cols-2"
-          >
-            {modules.map((module) => (
-              <Link key={module.href} href={module.href} className="block">
+          {/* Features */}
+          <FadeIn delay={0.3} className="mb-8 md:mb-12 w-full max-w-3xl">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {features.map((feature, index) => (
                 <motion.div
-                  className="group relative h-full overflow-hidden rounded-2xl glass p-6 md:p-8 cursor-pointer border-2 border-transparent hover:border-primary-500/30"
-                  whileHover={{
-                    scale: 1.02,
-                    y: -4,
-                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
-                  }}
-                  whileTap={{ scale: 0.98 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                  key={feature.title}
+                  className="glass rounded-xl p-4 text-center"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 + index * 0.1 }}
                 >
-                  {/* Gradient background on hover */}
-                  <div
-                    className={`absolute inset-0 bg-gradient-to-br ${module.gradient} opacity-0 transition-opacity duration-300 group-hover:opacity-[0.08]`}
-                  />
-
-                  {/* Icon */}
-                  <motion.div
-                    className={`mb-4 md:mb-6 inline-flex h-12 w-12 md:h-16 md:w-16 items-center justify-center rounded-xl md:rounded-2xl ${module.bgColor} ${module.iconColor}`}
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-                  >
-                    {module.icon}
-                  </motion.div>
-
-                  {/* Content */}
-                  <h2 className="mb-2 md:mb-3 font-display text-xl md:text-2xl font-bold text-gray-900 dark:text-white">
-                    {module.title}
-                  </h2>
-                  <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-                    {module.description}
-                  </p>
-
-                  {/* Click hint */}
-                  <div className="mt-4 md:mt-6 flex items-center text-sm font-medium text-primary-600 dark:text-primary-400">
-                    点击进入
-                    <motion.svg
-                      className="ml-2 h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      aria-hidden="true"
-                      animate={{ x: [0, 4, 0] }}
-                      transition={{ repeat: Number.POSITIVE_INFINITY, duration: 1.5 }}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5l7 7-7 7"
-                      />
-                    </motion.svg>
-                  </div>
+                  <div className="mb-2 text-purple-500">{feature.icon}</div>
+                  <h3 className="font-medium text-gray-900 dark:text-white text-sm mb-1">
+                    {feature.title}
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{feature.description}</p>
                 </motion.div>
-              </Link>
-            ))}
-          </StaggerChildren>
+              ))}
+            </div>
+          </FadeIn>
 
-          {/* Login hint for non-logged users */}
-          {!isAuthenticated && (
-            <FadeIn delay={0.5}>
-              <div className="mt-8 md:mt-12 flex items-center gap-3 md:gap-4 text-sm text-gray-500 dark:text-gray-400">
-                <span>还没有账号？</span>
+          {/* CTA */}
+          <FadeIn delay={0.6}>
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <Link href="/daily_question">
+                <Button variant="primary" className="!px-8 !py-3 !text-lg !rounded-xl">
+                  开始探索
+                </Button>
+              </Link>
+              <div className="flex items-center gap-3 text-sm text-gray-500">
                 <Link
                   href="/login"
                   className="font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
@@ -187,13 +139,13 @@ export default function HomePage() {
                   注册
                 </Link>
               </div>
-            </FadeIn>
-          )}
+            </div>
+          </FadeIn>
         </div>
 
-        {/* Simple footer */}
+        {/* Footer */}
         <footer className="absolute bottom-0 left-0 right-0 py-4 text-center text-xs text-gray-400 dark:text-gray-600">
-          快记 QuickNote
+          每日问答 Daily Question
         </footer>
       </main>
     </PageTransition>

@@ -42,7 +42,7 @@ export default function ReviewPage() {
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      router.replace('/login?redirect=/daily-question/review')
+      router.replace('/login?redirect=/daily_question/review')
     }
   }, [authLoading, isAuthenticated, router])
 
@@ -124,7 +124,7 @@ export default function ReviewPage() {
           <header className="relative z-10 border-b border-gray-200/50 dark:border-gray-800/50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
             <div className="mx-auto flex max-w-4xl items-center justify-between px-4 md:px-6 py-3 md:py-4">
               <div className="flex items-center gap-3">
-                <Link href="/daily-question">
+                <Link href="/daily_question">
                   <Button
                     type="text"
                     icon={<ArrowLeftOutlined />}
@@ -276,7 +276,6 @@ export default function ReviewPage() {
               {reviewStatsQuery.isLoading ? (
                 <div className="space-y-3 animate-pulse">
                   {[...Array(5)].map((_, i) => (
-                    // biome-ignore lint/suspicious/noArrayIndexKey: static loading skeleton
                     <div
                       key={`skeleton-${i}`}
                       className="h-20 bg-neutral-200 dark:bg-neutral-700 rounded"

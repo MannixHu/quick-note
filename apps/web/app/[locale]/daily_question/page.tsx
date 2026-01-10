@@ -84,7 +84,7 @@ export default function DailyQuestionPage() {
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      router.replace('/login?redirect=/daily-question')
+      router.replace('/login?redirect=/daily_question')
     }
   }, [authLoading, isAuthenticated, router])
 
@@ -112,7 +112,7 @@ export default function DailyQuestionPage() {
     error?: string
   } | null>(null)
 
-  // Load AI config from localStorage
+  // Load AI config from localStorage (only set state, not form)
   useEffect(() => {
     const savedConfig = localStorage.getItem('ai-config')
     if (savedConfig) {
@@ -130,16 +130,23 @@ export default function DailyQuestionPage() {
           localStorage.setItem('ai-config', JSON.stringify(config))
         }
         setAiConfig(config)
-        settingsForm.setFieldsValue(config)
       } catch {
-        // 加载失败时设置默认 prompt
+        // ignore
+      }
+    }
+  }, [])
+
+  // Sync form values when drawer opens
+  useEffect(() => {
+    if (settingsOpen) {
+      // Drawer 打开时才设置表单值，避免 Form 未挂载的警告
+      if (aiConfig) {
+        settingsForm.setFieldsValue(aiConfig)
+      } else {
         settingsForm.setFieldsValue({ prompt: DEFAULT_AI_PROMPT })
       }
-    } else {
-      // 没有保存的配置时，设置默认 prompt
-      settingsForm.setFieldsValue({ prompt: DEFAULT_AI_PROMPT })
     }
-  }, [settingsForm])
+  }, [settingsOpen, aiConfig, settingsForm])
 
   // tRPC queries - only run when authenticated
   // @ts-expect-error - tRPC v11 RC type compatibility
@@ -192,6 +199,7 @@ export default function DailyQuestionPage() {
       const data = answerMutation.data as {
         id: string
         date: Date
+        questionId: string
         question: { question: string }
         answer: string
       }
@@ -200,7 +208,9 @@ export default function DailyQuestionPage() {
         id: data.id,
         date: dayjs(data.date).format('YYYY-MM-DD HH:mm'),
         question: data.question.question,
+        questionId: data.questionId,
         answer: data.answer,
+        rating: currentRating || undefined,
       }
       setHistory((prev) => [newAnswer, ...prev])
       setAnswer('')
@@ -350,9 +360,7 @@ export default function DailyQuestionPage() {
     if (!userId || !item.questionId) return
 
     // 乐观更新本地状态
-    setHistory((prev) =>
-      prev.map((h) => (h.id === item.id ? { ...h, rating } : h))
-    )
+    setHistory((prev) => prev.map((h) => (h.id === item.id ? { ...h, rating } : h)))
 
     rateMutation.mutate(
       { userId, questionId: item.questionId, rating },
@@ -797,7 +805,9 @@ export default function DailyQuestionPage() {
               <AntButton
                 size="small"
                 onClick={() =>
-                  settingsForm.setFieldsValue({ baseURL: 'https://openrouter.ai/api/v1/chat/completions' })
+                  settingsForm.setFieldsValue({
+                    baseURL: 'https://openrouter.ai/api/v1/chat/completions',
+                  })
                 }
               >
                 OpenRouter
@@ -805,7 +815,9 @@ export default function DailyQuestionPage() {
               <AntButton
                 size="small"
                 onClick={() =>
-                  settingsForm.setFieldsValue({ baseURL: 'https://api.deepseek.com/v1/chat/completions' })
+                  settingsForm.setFieldsValue({
+                    baseURL: 'https://api.deepseek.com/v1/chat/completions',
+                  })
                 }
               >
                 DeepSeek
@@ -813,7 +825,9 @@ export default function DailyQuestionPage() {
               <AntButton
                 size="small"
                 onClick={() =>
-                  settingsForm.setFieldsValue({ baseURL: 'https://api.openai.com/v1/chat/completions' })
+                  settingsForm.setFieldsValue({
+                    baseURL: 'https://api.openai.com/v1/chat/completions',
+                  })
                 }
               >
                 OpenAI
