@@ -208,7 +208,46 @@ AI_PROVIDER=openrouter  # 或 deepseek
 OPENROUTER_API_KEY=your-key  # 如果使用 OpenRouter
 DEEPSEEK_API_KEY=your-key    # 如果使用 DeepSeek
 AI_MODEL=anthropic/claude-3.5-sonnet  # 可选，指定模型
+
+# Email Service (可选 - 用于邮箱验证)
+RESEND_API_KEY=re_xxxx        # Resend API Key
+EMAIL_FROM=noreply@your.domain  # 发件人邮箱（需要在 Resend 验证域名）
+EMAIL_FROM_NAME=快记            # 发件人名称
 ```
+
+## 邮件服务 (Resend)
+
+项目使用 Resend 发送邮箱验证码，用于注册验证和忘记密码。
+
+### 配置
+
+1. 注册 Resend: https://resend.com
+2. 获取 API Key
+3. (可选) 验证自定义域名
+
+```bash
+# .env 文件
+RESEND_API_KEY="re_xxxx"
+EMAIL_FROM="noreply@your.domain"  # 默认使用 Resend 测试域名
+EMAIL_FROM_NAME="快记"
+```
+
+### 使用方法
+
+```typescript
+import { createEmailService, EmailService } from '@app/api/services/email'
+
+const emailService = createEmailService()
+
+// 发送注册验证码
+const code = EmailService.generateCode() // 生成6位验证码
+await emailService.sendVerificationCode('user@example.com', code)
+
+// 发送重置密码验证码
+await emailService.sendPasswordResetCode('user@example.com', code)
+```
+
+---
 
 ## AI 每日问题生成
 

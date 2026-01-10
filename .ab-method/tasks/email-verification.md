@@ -29,18 +29,18 @@ model EmailVerification {
 
 ## Missions
 
-### Mission 1: 集成 Resend 邮件服务
+### Mission 1: 集成 Resend 邮件服务 ✅
 **预计时间**: 1-2小时
 **目标**: 配置 Resend SDK 并创建邮件发送服务
 
 **任务清单**:
-- [ ] 安装 resend 包到 packages/api
-- [ ] 创建 `packages/api/src/services/email.ts` 邮件服务
-- [ ] 实现 `sendVerificationCode()` 发送验证码邮件
-- [ ] 实现 `sendPasswordResetCode()` 发送重置密码邮件
-- [ ] 创建邮件模板（简洁的验证码样式）
-- [ ] 添加环境变量 `RESEND_API_KEY`
-- [ ] 更新 `.env.example` 和 `CLAUDE.md`
+- [x] 安装 resend 包到 packages/api
+- [x] 创建 `packages/api/src/services/email.ts` 邮件服务
+- [x] 实现 `sendVerificationCode()` 发送验证码邮件
+- [x] 实现 `sendPasswordResetCode()` 发送重置密码邮件
+- [x] 创建邮件模板（简洁的验证码样式）
+- [x] 添加环境变量 `RESEND_API_KEY`
+- [x] 更新 `CLAUDE.md` 文档
 
 **验收标准**:
 - 能通过 API 发送测试邮件
@@ -163,7 +163,7 @@ model EmailVerification {
 
 | Mission | 状态 | 开始时间 | 完成时间 |
 |---------|------|----------|----------|
-| 1. Resend 集成 | ⏳ 待开始 | - | - |
+| 1. Resend 集成 | ✅ 完成 | 2026-01-11 | 2026-01-11 |
 | 2. 邮箱验证 API | ⏳ 待开始 | - | - |
 | 3. 忘记密码 API | ⏳ 待开始 | - | - |
 | 4. 前端注册改造 | ⏳ 待开始 | - | - |
