@@ -48,7 +48,7 @@ export default function HomePage() {
 
   return (
     <PageTransition>
-      <main className="relative min-h-screen">
+      <main className="relative h-screen overflow-hidden">
         {/* Background */}
         <div className="absolute inset-0 gradient-mesh opacity-50" />
 
