@@ -2,7 +2,7 @@
 
 import { Card, Empty, Segmented, Spin } from 'antd'
 import dayjs from 'dayjs'
-import ActivityCalendar, { type Activity } from 'react-activity-calendar'
+import { type Activity, ActivityCalendar } from 'react-activity-calendar'
 
 interface YearlyHeatmapProps {
   activities: Activity[]
