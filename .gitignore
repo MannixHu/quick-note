@@ -42,3 +42,6 @@ prisma/generated
 
 # Docker
 .docker
+
+# Git worktrees
+.worktrees
