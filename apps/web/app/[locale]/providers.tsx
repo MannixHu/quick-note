@@ -67,7 +67,20 @@ export function Providers({
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 5 * 1000,
+            // Data is considered fresh for 1 minute
+            staleTime: 60 * 1000,
+            // Keep unused data in cache for 5 minutes
+            gcTime: 5 * 60 * 1000,
+            // Don't refetch on window focus for better UX
+            refetchOnWindowFocus: false,
+            // Retry only once on failure
+            retry: 1,
+            // Don't refetch on reconnect automatically
+            refetchOnReconnect: 'always',
+          },
+          mutations: {
+            // Retry once on mutation failure
+            retry: 1,
           },
         },
       })

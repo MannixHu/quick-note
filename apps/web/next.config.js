@@ -37,8 +37,21 @@ const nextConfig = {
 
   // Experimental features for optimization
   experimental: {
-    optimizePackageImports: ['antd', '@ant-design/icons', 'framer-motion'],
+    // Tree-shake and optimize these packages
+    optimizePackageImports: [
+      'antd',
+      '@ant-design/icons',
+      'framer-motion',
+      'dayjs',
+      '@tanstack/react-query',
+    ],
   },
+
+  // Compress responses
+  compress: true,
+
+  // Enable powered by header removal for slight bandwidth savings
+  poweredByHeader: false,
 
   // Standalone output for Docker
   output: 'standalone',
