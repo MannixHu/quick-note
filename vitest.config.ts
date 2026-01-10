@@ -15,11 +15,9 @@ export default defineConfig({
       'packages/**/*.test.{ts,tsx}',
     ],
     exclude: ['tests/e2e/**', 'node_modules/**'],
-    deps: {
-      optimizer: {
-        web: {
-          include: ['react', 'react-dom', 'antd', 'framer-motion'],
-        },
+    server: {
+      deps: {
+        inline: ['react', 'react-dom', '@testing-library/react'],
       },
     },
     coverage: {
@@ -45,6 +43,9 @@ export default defineConfig({
       '@app/api': path.resolve(__dirname, './packages/api/src'),
       '@app/db': path.resolve(__dirname, './packages/db/src'),
       '@app/shared': path.resolve(__dirname, './packages/shared/src'),
+      // React resolution for monorepo
+      react: path.resolve(__dirname, './apps/web/node_modules/react'),
+      'react-dom': path.resolve(__dirname, './apps/web/node_modules/react-dom'),
     },
   },
 })
