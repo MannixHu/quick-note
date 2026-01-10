@@ -34,24 +34,6 @@
       "outputs": [],
       "cache": true
     },
-    "test": {
-      "dependsOn": ["^build"],
-      "outputs": ["coverage/**"],
-      "cache": true
-    },
-    "test:coverage": {
-      "dependsOn": ["^build"],
-      "outputs": ["coverage/**"],
-      "cache": true
-    },
-    "test:e2e": {
-      "dependsOn": ["build"],
-      "cache": false
-    },
-    "test:e2e:ui": {
-      "dependsOn": ["build"],
-      "cache": false
-    },
     "db:generate": {
       "inputs": ["packages/db/prisma/schema.prisma"],
       "outputs": [],
