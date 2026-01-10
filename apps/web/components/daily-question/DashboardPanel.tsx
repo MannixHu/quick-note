@@ -1,6 +1,6 @@
 'use client'
 
-import { FireOutlined, CalendarOutlined, TagOutlined, RightOutlined } from '@ant-design/icons'
+import { CalendarOutlined, FireOutlined, RightOutlined, TagOutlined } from '@ant-design/icons'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
@@ -140,7 +140,7 @@ export function DashboardPanel({
             <div className="hidden md:flex items-center gap-2">
               <TagOutlined className="text-neutral-400 text-sm" />
               <div className="flex items-center gap-1.5">
-                {topTags.slice(0, 3).map((tag, index) => (
+                {topTags.slice(0, 3).map((tag) => (
                   <span
                     key={tag.tag}
                     className="px-2 py-0.5 text-xs rounded-full bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300"

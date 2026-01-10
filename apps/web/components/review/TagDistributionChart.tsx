@@ -50,8 +50,7 @@ const CATEGORY_CONFIG: Record<string, { label: string; color: string }> = {
   unknown: { label: '其他', color: '#6b7280' },
 }
 
-const getConfig = (tag: string) =>
-  CATEGORY_CONFIG[tag] || { label: tag, color: '#6b7280' }
+const getConfig = (tag: string) => CATEGORY_CONFIG[tag] || { label: tag, color: '#6b7280' }
 
 export function TagDistributionChart({ data, isLoading }: TagDistributionChartProps) {
   if (isLoading) {
@@ -71,11 +70,7 @@ export function TagDistributionChart({ data, isLoading }: TagDistributionChartPr
   }
 
   if (!data || data.length === 0) {
-    return (
-      <div className="text-center py-8 text-neutral-500 dark:text-neutral-400">
-        暂无数据
-      </div>
-    )
+    return <div className="text-center py-8 text-neutral-500 dark:text-neutral-400">暂无数据</div>
   }
 
   const maxCount = Math.max(...data.map((d) => d.count))

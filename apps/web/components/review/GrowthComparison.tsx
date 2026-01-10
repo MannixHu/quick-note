@@ -1,6 +1,6 @@
 'use client'
 
-import { SwapOutlined, CalendarOutlined } from '@ant-design/icons'
+import { CalendarOutlined, SwapOutlined } from '@ant-design/icons'
 import { Collapse, Empty, Typography } from 'antd'
 import dayjs from 'dayjs'
 import { motion } from 'framer-motion'
@@ -85,7 +85,8 @@ export function GrowthComparison({ comparisons, isLoading }: GrowthComparisonPro
     return (
       <div className="space-y-4">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="animate-pulse">
+          // biome-ignore lint/suspicious/noArrayIndexKey: static loading skeleton
+          <div key={`skeleton-${i}`} className="animate-pulse">
             <div className="h-6 w-24 bg-neutral-200 dark:bg-neutral-700 rounded mb-3" />
             <div className="flex gap-4">
               <div className="flex-1 h-32 bg-neutral-200 dark:bg-neutral-700 rounded-lg" />
@@ -101,7 +102,7 @@ export function GrowthComparison({ comparisons, isLoading }: GrowthComparisonPro
     return <Empty description="需要在同一类别有多次回答才能进行对比" />
   }
 
-  const items = comparisons.map((comparison, index) => ({
+  const items = comparisons.map((comparison) => ({
     key: comparison.category,
     label: (
       <div className="flex items-center gap-2">
@@ -114,11 +115,7 @@ export function GrowthComparison({ comparisons, isLoading }: GrowthComparisonPro
       </div>
     ),
     children: (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-      >
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
         {/* First vs Latest Comparison */}
         <div className="flex flex-col md:flex-row gap-4 items-stretch">
           <AnswerCard answer={comparison.firstAnswer} label="最早回答" />
@@ -138,8 +135,9 @@ export function GrowthComparison({ comparisons, isLoading }: GrowthComparisonPro
             </Text>
             <div className="space-y-2 max-h-40 overflow-y-auto">
               {comparison.allAnswers.map((ans, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: answers are read-only, no reordering
                 <div
-                  key={i}
+                  key={`answer-${i}`}
                   className="flex items-start gap-2 text-sm py-1 border-b border-neutral-100 dark:border-neutral-800 last:border-0"
                 >
                   <Text type="secondary" className="text-xs whitespace-nowrap">

@@ -55,7 +55,7 @@ export class AIService {
     const startTime = Date.now()
 
     try {
-      const response = await fetch(`${this.baseURL}/chat/completions`, {
+      const response = await fetch(this.baseURL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -110,15 +110,18 @@ export class AIService {
 
   /**
    * 批量生成深度思考问题
+   * @param count 生成数量
+   * @param categories 可选的类别列表
+   * @param isPreference 是否是用户偏好的类别（会在提示词中强调）
    */
-  async generateQuestions(count = 5, categories?: string[]): Promise<GeneratedQuestion[]> {
-    // 可选的类别列表
-    const categoryList = categories?.length
-      ? categories.join(', ')
-      : 'reflection, planning, gratitude, growth, relationships, values, logic, philosophy, creativity, psychology'
-
+  async generateQuestions(
+    count = 5,
+    categories?: string[],
+    isPreference = false
+  ): Promise<GeneratedQuestion[]> {
     // 固定的标签列表
-    const tagList = 'thinking, introspection, learning, possibilities, optimization, social, values, action'
+    const tagList =
+      'thinking, introspection, learning, possibilities, optimization, social, values, action'
 
     // 用户可自定义的角色提示词（描述AI的角色和风格）
     const defaultRolePrompt = `你是一个专业的人生教练和心理咨询师。请生成深度思考问题，帮助用户进行自我反思和成长。
@@ -132,12 +135,54 @@ export class AIService {
 
     const rolePrompt = this.config.prompt || defaultRolePrompt
 
+    // 构建类别提示
+    let categoryPrompt: string
+    if (categories?.length && isPreference) {
+      // 用户偏好模式：强调这些是用户喜欢的类别，但保持一定探索性
+      categoryPrompt = `
+【个性化推荐】根据用户的历史评分，用户偏好以下类别的问题：${categories.join(', ')}
+
+请生成 ${count} 个问题，category 必须是上述偏好类别之一。
+
+注意：这是基于用户评分的个性化推荐（70% 置信区间），系统会在其他时候推荐不同类别以保持探索性，防止信息茧房。`
+    } else if (categories?.length) {
+      // 指定类别模式
+      categoryPrompt = `
+请生成 ${count} 个问题。
+category 必须从以下选择: ${categories.join(', ')}`
+    } else {
+      // 随机探索模式：使用所有类别
+      categoryPrompt = `
+【探索模式】为了帮助用户发现新的思考方向，请从多样化的类别中生成问题。
+
+请生成 ${count} 个问题。
+category 必须从以下选择: reflection, planning, gratitude, growth, relationships, values, logic, philosophy, creativity, psychology
+
+注意：这是随机探索模式（30% 置信区间），旨在帮助用户拓展思考边界，避免信息茧房。`
+    }
+
+    // 生成随机种子，用于增加问题多样性
+    const randomSeed = Math.floor(Math.random() * 10000)
+    const randomHints = [
+      '请从独特的角度提问',
+      '请尝试一个新颖的切入点',
+      '请提出一个出人意料的问题',
+      '请从日常细节入手',
+      '请关注内心深处的感受',
+      '请探索未曾思考过的方向',
+      '请结合当下的时代背景',
+      '请从人际关系角度思考',
+      '请挑战常规思维模式',
+      '请聚焦于具体的生活场景',
+    ]
+    const randomHint = randomHints[randomSeed % randomHints.length]
+
     // 固定的格式要求（代码依赖，不可自定义）
     const formatPrompt = `
-请生成 ${count} 个问题。
-
-category 必须从以下选择: ${categoryList}
+${categoryPrompt}
 tag 必须从以下选择: ${tagList}
+
+【创意提示 #${randomSeed}】${randomHint}
 
 请以 JSON 格式返回，格式如下：
 [
@@ -153,13 +198,13 @@ tag 必须从以下选择: ${tagList}
     const prompt = rolePrompt + formatPrompt
 
     try {
-      const response = await fetch(`${this.baseURL}/chat/completions`, {
+      const response = await fetch(this.baseURL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${this.config.apiKey}`,
           ...(this.isOpenRouter() && {
-            'HTTP-Referer': 'https://github.com/your-repo', // OpenRouter 要求
+            'HTTP-Referer': 'https://github.com/mannix-lei/quick-note',
             'X-Title': 'QuickNote App',
           }),
         },
@@ -171,7 +216,8 @@ tag 必须从以下选择: ${tagList}
               content: prompt,
             },
           ],
-          temperature: 0.8,
+          temperature: 1.0, // 提高到 1.0 增加随机性
+          top_p: 0.95, // 核采样，增加多样性
           max_tokens: 2000,
         }),
       })
@@ -182,10 +228,16 @@ tag 必须从以下选择: ${tagList}
       }
 
       const data = await response.json()
-      const content = data.choices?.[0]?.message?.content
+
+      // 兼容 OpenAI 和 Anthropic 两种 API 格式
+      // OpenAI: data.choices[0].message.content
+      // Anthropic: data.content[0].text
+      const content =
+        data.choices?.[0]?.message?.content || // OpenAI 格式
+        data.content?.[0]?.text // Anthropic 格式
 
       if (!content) {
-        throw new Error('No content in AI response')
+        throw new Error(`No content in AI response. Full response: ${JSON.stringify(data)}`)
       }
 
       // 解析 JSON 响应
@@ -239,13 +291,13 @@ ${recentAnswers}
 只返回 JSON，不要其他解释。`
 
     try {
-      const response = await fetch(`${this.baseURL}/chat/completions`, {
+      const response = await fetch(this.baseURL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${this.config.apiKey}`,
           ...(this.isOpenRouter() && {
-            'HTTP-Referer': 'https://github.com/your-repo',
+            'HTTP-Referer': 'https://github.com/mannix-lei/quick-note',
             'X-Title': 'QuickNote App',
           }),
         },
@@ -268,7 +320,11 @@ ${recentAnswers}
       }
 
       const data = await response.json()
-      const content = data.choices?.[0]?.message?.content
+
+      // 兼容 OpenAI 和 Anthropic 两种 API 格式
+      const content =
+        data.choices?.[0]?.message?.content || // OpenAI 格式
+        data.content?.[0]?.text // Anthropic 格式
 
       if (!content) {
         throw new Error('No content in AI response')

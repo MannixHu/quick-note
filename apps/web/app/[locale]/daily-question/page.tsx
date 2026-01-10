@@ -13,8 +13,8 @@ import {
   CheckCircleOutlined,
   CloseCircleOutlined,
   QuestionCircleOutlined,
+  RobotOutlined,
   SettingOutlined,
-  ThunderboltOutlined,
 } from '@ant-design/icons'
 import {
   Button as AntButton,
@@ -24,7 +24,6 @@ import {
   Empty,
   Form,
   Input,
-  Radio,
   Spin,
   Tag,
   Tooltip,
@@ -63,7 +62,9 @@ interface AnswerHistory {
   id: string
   date: string
   question: string
+  questionId: string
   answer: string
+  rating?: number // 用户评分 1-5
 }
 
 interface AIConfig {
@@ -117,9 +118,16 @@ export default function DailyQuestionPage() {
     if (savedConfig) {
       try {
         const config = JSON.parse(savedConfig) as AIConfig
-        // 如果没有 prompt，使用默认值
-        if (!config.prompt) {
+        // 检测并清理旧版本的 prompt（包含 JSON 格式要求或变量占位符）
+        const hasOldFormat =
+          !config.prompt ||
+          config.prompt.includes('JSON 格式') ||
+          config.prompt.includes('{{') ||
+          config.prompt.includes('只返回 JSON')
+        if (hasOldFormat) {
           config.prompt = DEFAULT_AI_PROMPT
+          // 更新 localStorage 清理旧格式
+          localStorage.setItem('ai-config', JSON.stringify(config))
         }
         setAiConfig(config)
         settingsForm.setFieldsValue(config)
@@ -155,6 +163,12 @@ export default function DailyQuestionPage() {
   // @ts-expect-error - tRPC v11 RC type compatibility
   const dashboardQuery = trpc.dailyQuestion.getDashboardSummary.useQuery(
     { userId: userId ?? '' },
+    { retry: 2, enabled: !!userId }
+  )
+
+  // @ts-expect-error - tRPC v11 RC type compatibility
+  const userRatingsQuery = trpc.dailyQuestion.getUserRatings.useQuery(
+    { userId: userId ?? '', limit: 100 },
     { retry: 2, enabled: !!userId }
   )
 
@@ -203,8 +217,33 @@ export default function DailyQuestionPage() {
   // biome-ignore lint/correctness/useExhaustiveDependencies: message is a stable ref
   useEffect(() => {
     if (generateAIMutation.data) {
-      const data = generateAIMutation.data as { count: number }
-      message.success(`成功生成 ${data.count} 个问题`)
+      const data = generateAIMutation.data as {
+        count: number
+        questions: Array<{
+          id: string
+          question: string
+          category: string | null
+          tag: string | null
+        }>
+        preferenceApplied?: boolean
+        usedCategories?: string[]
+      }
+      // 生成成功后，将第一个问题设置为当前问题
+      if (data.questions.length > 0) {
+        const firstQuestion = data.questions[0]
+        if (firstQuestion) {
+          setTodayQuestion(firstQuestion.question)
+          setQuestionId(firstQuestion.id)
+          setQuestionSource(data.preferenceApplied ? 'preference' : 'random')
+          setCurrentRating(0)
+          // 根据是否应用偏好显示不同提示
+          if (data.preferenceApplied && data.usedCategories?.length) {
+            message.success(`已根据偏好生成 (${data.usedCategories.slice(0, 2).join('/')})`)
+          } else {
+            message.success('AI 问题已生成 (随机探索)')
+          }
+        }
+      }
     }
     if (generateAIMutation.error) {
       const error = generateAIMutation.error as { message: string }
@@ -250,14 +289,30 @@ export default function DailyQuestionPage() {
       const data = historyQuery.data as Array<{
         id: string
         date: Date
+        questionId: string
         question: { question: string }
         answer: string
       }>
+
+      // 获取评分映射
+      const ratingsMap = new Map<string, number>()
+      if (userRatingsQuery.data) {
+        const ratings = userRatingsQuery.data as Array<{
+          questionId: string
+          rating: number
+        }>
+        for (const r of ratings) {
+          ratingsMap.set(r.questionId, r.rating)
+        }
+      }
+
       const apiHistory = data.map((h) => ({
         id: h.id,
         date: dayjs(h.date).format('YYYY-MM-DD HH:mm'),
         question: h.question.question,
+        questionId: h.questionId,
         answer: h.answer,
+        rating: ratingsMap.get(h.questionId),
       }))
       // Merge with existing local history (avoid duplicates by id)
       setHistory((prev) => {
@@ -267,7 +322,7 @@ export default function DailyQuestionPage() {
         return [...localOnly, ...apiHistory]
       })
     }
-  }, [historyQuery.data])
+  }, [historyQuery.data, userRatingsQuery.data])
 
   const handleLocalSubmit = () => {
     if (!answer.trim()) {
@@ -279,13 +334,43 @@ export default function DailyQuestionPage() {
       id: `${Date.now()}`,
       date: dayjs().format('YYYY-MM-DD HH:mm'),
       question: todayQuestion,
+      questionId: questionId ?? '',
       answer: answer.trim(),
+      rating: currentRating || undefined,
     }
     setHistory([newAnswer, ...history])
     setAnswer('')
     // Get next question
     getNextQuestion()
     message.success('回答已保存')
+  }
+
+  // 处理历史记录中的评分变更
+  const handleHistoryRatingChange = (item: AnswerHistory, rating: number) => {
+    if (!userId || !item.questionId) return
+
+    // 乐观更新本地状态
+    setHistory((prev) =>
+      prev.map((h) => (h.id === item.id ? { ...h, rating } : h))
+    )
+
+    rateMutation.mutate(
+      { userId, questionId: item.questionId, rating },
+      {
+        onSuccess: () => {
+          message.success('评分已更新')
+          userRatingsQuery.refetch()
+        },
+        onError: (error: unknown) => {
+          console.error('Rating failed:', error)
+          message.error('评分失败')
+          // 回滚
+          setHistory((prev) =>
+            prev.map((h) => (h.id === item.id ? { ...h, rating: item.rating } : h))
+          )
+        },
+      }
+    )
   }
 
   const handleSubmit = () => {
@@ -372,9 +457,12 @@ export default function DailyQuestionPage() {
       return
     }
 
+    // 生成 1 个问题，传入 userId 以启用偏好推荐
+    // preferenceStrength 默认 0.7 (70% 偏好，30% 随机探索防止信息茧房)
     generateAIMutation.mutate({
-      count: 5,
+      count: 1,
       aiConfig,
+      userId: userId ?? undefined,
     })
   }
 
@@ -462,15 +550,6 @@ export default function DailyQuestionPage() {
                 {!isApiAvailable && <Tag color="orange">离线模式</Tag>}
               </div>
               <div className="flex items-center gap-1 md:gap-2">
-                <Tooltip title="AI 生成问题">
-                  <AntButton
-                    icon={<ThunderboltOutlined />}
-                    onClick={handleGenerateQuestions}
-                    loading={generateAIMutation.isPending}
-                    disabled={!aiConfig}
-                    size="middle"
-                  />
-                </Tooltip>
                 <Tooltip title="AI 设置">
                   <AntButton
                     icon={<SettingOutlined />}
@@ -564,7 +643,7 @@ export default function DailyQuestionPage() {
                           className="resize-none !rounded-xl"
                         />
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap">
                         <Button
                           variant="primary"
                           onClick={handleSubmit}
@@ -580,6 +659,17 @@ export default function DailyQuestionPage() {
                         >
                           换一个问题
                         </Button>
+                        <Tooltip title={aiConfig ? 'AI 生成新问题' : '请先配置 AI'}>
+                          <AntButton
+                            icon={<RobotOutlined />}
+                            onClick={handleGenerateQuestions}
+                            loading={generateAIMutation.isPending}
+                            disabled={!aiConfig}
+                            className="!rounded-xl"
+                          >
+                            AI 生成
+                          </AntButton>
+                        </Tooltip>
                       </div>
                     </div>
                   </>
@@ -612,15 +702,26 @@ export default function DailyQuestionPage() {
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.3, delay: index * 0.05 }}
+                        className="border-b border-gray-100 dark:border-gray-800 pb-3 last:border-0"
                       >
-                        <div className="flex items-center gap-2 mb-1">
+                        {/* 日期和评分 */}
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
                           <Text type="secondary" className="text-xs">
                             {item.date}
                           </Text>
+                          {item.questionId && (
+                            <StarRating
+                              value={item.rating ?? 0}
+                              onChange={(rating) => handleHistoryRatingChange(item, rating)}
+                              size="small"
+                            />
+                          )}
                         </div>
-                        <Text className="text-sm text-gray-500 dark:text-gray-400 block mb-1">
+                        {/* 问题 - 加粗样式 */}
+                        <Text strong className="text-sm block mb-1.5">
                           {item.question}
                         </Text>
+                        {/* 回答 - 可编辑 */}
                         {editingHistoryId === item.id ? (
                           <div className="space-y-2">
                             <Input.TextArea
@@ -643,7 +744,7 @@ export default function DailyQuestionPage() {
                         ) : (
                           <motion.button
                             type="button"
-                            className="text-sm cursor-pointer hover:text-primary-600 dark:hover:text-primary-400 transition-colors text-left bg-transparent border-0 p-0 w-full"
+                            className="text-sm cursor-pointer text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors text-left bg-transparent border-0 p-0 w-full"
                             onClick={() => handleEditHistory(item)}
                             whileHover={{ x: 4 }}
                             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
@@ -667,34 +768,53 @@ export default function DailyQuestionPage() {
           onClose={() => setSettingsOpen(false)}
           styles={{ wrapper: { width: 400 } }}
         >
-          <Form form={settingsForm} layout="vertical" onFinish={handleSaveSettings} autoComplete="off">
+          <Form
+            form={settingsForm}
+            layout="vertical"
+            onFinish={handleSaveSettings}
+            autoComplete="off"
+          >
             <Form.Item
               name="baseURL"
               label="API 地址"
               tooltip="支持 OpenAI 兼容接口，需以 /v1 结尾"
               rules={[{ required: true, message: '请输入 API 地址' }]}
-              extra={<Text type="secondary" className="text-xs">需填写完整地址，如 https://api.example.com/v1 (会自动拼接 /chat/completions)</Text>}
+              extra={
+                <Text type="secondary" className="text-xs">
+                  需填写完整地址，如 https://api.deepseek.com/v1/chat/completions
+                </Text>
+              }
             >
-              <Input placeholder="https://api.example.com/v1" autoComplete="new-password" data-form-type="other" />
+              <Input
+                placeholder="https://api.example.com/v1"
+                autoComplete="new-password"
+                data-form-type="other"
+              />
             </Form.Item>
 
             {/* 预设按钮 */}
             <div className="mb-4 flex flex-wrap gap-2">
               <AntButton
                 size="small"
-                onClick={() => settingsForm.setFieldsValue({ baseURL: 'https://openrouter.ai/api/v1' })}
+                onClick={() =>
+                  settingsForm.setFieldsValue({ baseURL: 'https://openrouter.ai/api/v1/chat/completions' })
+                }
               >
                 OpenRouter
               </AntButton>
               <AntButton
                 size="small"
-                onClick={() => settingsForm.setFieldsValue({ baseURL: 'https://api.deepseek.com/v1' })}
+                onClick={() =>
+                  settingsForm.setFieldsValue({ baseURL: 'https://api.deepseek.com/v1/chat/completions' })
+                }
               >
                 DeepSeek
               </AntButton>
               <AntButton
                 size="small"
-                onClick={() => settingsForm.setFieldsValue({ baseURL: 'https://api.openai.com/v1' })}
+                onClick={() =>
+                  settingsForm.setFieldsValue({ baseURL: 'https://api.openai.com/v1/chat/completions' })
+                }
               >
                 OpenAI
               </AntButton>
@@ -709,14 +829,33 @@ export default function DailyQuestionPage() {
             </Form.Item>
 
             <Form.Item name="model" label="模型 (可选)">
-              <Input placeholder="如: gpt-4, claude-3.5-sonnet, deepseek-chat" autoComplete="new-password" />
+              <Input
+                placeholder="如: gpt-4, claude-3.5-sonnet, deepseek-chat"
+                autoComplete="new-password"
+              />
             </Form.Item>
 
             <Form.Item
               name="prompt"
-              label="角色提示词"
+              label={
+                <div className="flex items-center justify-between w-full">
+                  <span>角色提示词</span>
+                  <AntButton
+                    type="link"
+                    size="small"
+                    className="!p-0 !h-auto"
+                    onClick={() => settingsForm.setFieldValue('prompt', DEFAULT_AI_PROMPT)}
+                  >
+                    重置默认
+                  </AntButton>
+                </div>
+              }
               tooltip="自定义 AI 的角色和风格，输出格式由系统固定"
-              extra={<Text type="secondary" className="text-xs">只需描述 AI 角色和生成要求，JSON 格式由系统自动处理</Text>}
+              extra={
+                <Text type="secondary" className="text-xs">
+                  只需描述 AI 角色和生成要求，JSON 格式由系统自动处理
+                </Text>
+              }
             >
               <Input.TextArea rows={6} autoComplete="off" />
             </Form.Item>

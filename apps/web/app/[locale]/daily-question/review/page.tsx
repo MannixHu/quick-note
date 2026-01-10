@@ -7,7 +7,7 @@ import { FadeIn, PageTransition, SlideUp } from '@/components/ui'
 import { useAuth } from '@/hooks'
 import { Link, useRouter } from '@/lib/i18n/routing'
 import { trpc } from '@/lib/trpc/client'
-import { ArrowLeftOutlined, CalendarOutlined, StarOutlined, RiseOutlined } from '@ant-design/icons'
+import { ArrowLeftOutlined, CalendarOutlined, RiseOutlined, StarOutlined } from '@ant-design/icons'
 import { Button, Card, Empty, Segmented, Spin, Typography } from 'antd'
 import dayjs from 'dayjs'
 import { motion } from 'framer-motion'
@@ -195,7 +195,8 @@ export default function ReviewPage() {
               {reviewStatsQuery.isLoading ? (
                 <div className="space-y-4 animate-pulse">
                   {[...Array(3)].map((_, i) => (
-                    <div key={i}>
+                    // biome-ignore lint/suspicious/noArrayIndexKey: static loading skeleton
+                    <div key={`skeleton-${i}`}>
                       <div className="h-4 w-3/4 bg-neutral-200 dark:bg-neutral-700 rounded mb-2" />
                       <div className="h-16 bg-neutral-200 dark:bg-neutral-700 rounded" />
                     </div>
@@ -219,7 +220,8 @@ export default function ReviewPage() {
                         </Text>
                         <div className="flex items-center gap-1">
                           {[...Array(item.rating)].map((_, i) => (
-                            <span key={i} className="text-orange-400 text-xs">
+                            // biome-ignore lint/suspicious/noArrayIndexKey: static star rating
+                            <span key={`star-${i}`} className="text-orange-400 text-xs">
                               ★
                             </span>
                           ))}
@@ -274,7 +276,11 @@ export default function ReviewPage() {
               {reviewStatsQuery.isLoading ? (
                 <div className="space-y-3 animate-pulse">
                   {[...Array(5)].map((_, i) => (
-                    <div key={i} className="h-20 bg-neutral-200 dark:bg-neutral-700 rounded" />
+                    // biome-ignore lint/suspicious/noArrayIndexKey: static loading skeleton
+                    <div
+                      key={`skeleton-${i}`}
+                      className="h-20 bg-neutral-200 dark:bg-neutral-700 rounded"
+                    />
                   ))}
                 </div>
               ) : !stats?.answers || stats.answers.length === 0 ? (
@@ -296,7 +302,8 @@ export default function ReviewPage() {
                         {item.rating && (
                           <div className="flex items-center gap-0.5">
                             {[...Array(item.rating)].map((_, i) => (
-                              <span key={i} className="text-orange-400 text-xs">
+                              // biome-ignore lint/suspicious/noArrayIndexKey: static star rating
+                              <span key={`star-${i}`} className="text-orange-400 text-xs">
                                 ★
                               </span>
                             ))}

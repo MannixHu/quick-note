@@ -1,6 +1,11 @@
 'use client'
 
-import { CalendarOutlined, FireOutlined, FileTextOutlined, FieldTimeOutlined } from '@ant-design/icons'
+import {
+  CalendarOutlined,
+  FieldTimeOutlined,
+  FileTextOutlined,
+  FireOutlined,
+} from '@ant-design/icons'
 import { motion } from 'framer-motion'
 
 interface StatsOverviewProps {
@@ -56,7 +61,8 @@ export function StatsOverview({
     return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="glass rounded-xl p-4 animate-pulse">
+          // biome-ignore lint/suspicious/noArrayIndexKey: static loading skeleton
+          <div key={`skeleton-${i}`} className="glass rounded-xl p-4 animate-pulse">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-neutral-200 dark:bg-neutral-700" />
               <div className="flex-1">
