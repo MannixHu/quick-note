@@ -10,6 +10,7 @@ export interface EmptyStateProps {
   description?: string
   action?: ReactNode
   className?: string
+  variant?: 'default' | 'compact' | 'fun'
 }
 
 export const EmptyState = ({
@@ -18,22 +19,48 @@ export const EmptyState = ({
   description,
   action,
   className,
+  variant = 'default',
 }: EmptyStateProps) => {
+  const isCompact = variant === 'compact'
+  const isFun = variant === 'fun'
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className={cn('flex flex-col items-center justify-center py-12 px-6 text-center', className)}
+      className={cn(
+        'flex flex-col items-center justify-center text-center',
+        isCompact ? 'py-6 px-4' : 'py-12 px-6',
+        className
+      )}
     >
       <motion.div
         initial={{ scale: 0.8 }}
-        animate={{ scale: 1 }}
-        transition={{ duration: 0.3, delay: 0.1 }}
-        className="mb-4"
+        animate={
+          isFun
+            ? {
+                scale: 1,
+                y: [0, -8, 0],
+              }
+            : { scale: 1 }
+        }
+        transition={
+          isFun
+            ? {
+                scale: { duration: 0.3, delay: 0.1 },
+                y: { duration: 3, repeat: Number.POSITIVE_INFINITY, ease: 'easeInOut' },
+              }
+            : { duration: 0.3, delay: 0.1 }
+        }
+        className={cn('mb-4', isFun && 'drop-shadow-lg')}
       >
         {typeof icon === 'string' ? (
-          <span className="text-5xl" role="img" aria-hidden>
+          <span
+            className={cn('block', isCompact ? 'text-4xl' : 'text-5xl', isFun && 'text-6xl')}
+            role="img"
+            aria-hidden
+          >
             {icon}
           </span>
         ) : (
@@ -45,7 +72,10 @@ export const EmptyState = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
-        className="text-lg font-semibold text-[var(--text-primary)] mb-2"
+        className={cn(
+          'font-semibold text-gray-900 dark:text-gray-100 mb-2',
+          isCompact ? 'text-base' : 'text-lg'
+        )}
       >
         {title}
       </motion.h3>
@@ -55,7 +85,10 @@ export const EmptyState = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
-          className="text-sm text-[var(--text-secondary)] max-w-sm mb-6"
+          className={cn(
+            'text-gray-500 dark:text-gray-400 max-w-sm',
+            isCompact ? 'text-sm mb-4' : 'text-sm mb-6'
+          )}
         >
           {description}
         </motion.p>

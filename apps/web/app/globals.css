@@ -488,3 +488,220 @@ body {
   font-family: var(--font-display) !important;
   letter-spacing: var(--tracking-tight) !important;
 }
+
+/* ========== Enhanced Gradients ========== */
+.gradient-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.gradient-warm {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.gradient-cool {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.gradient-sunset {
+  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+}
+
+.gradient-nature {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+.gradient-ocean {
+  background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
+}
+
+/* Time Block Category Gradients */
+.category-longterm {
+  --category-color: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.category-work {
+  --category-color: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+.category-study {
+  --category-color: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+}
+
+.category-rest {
+  --category-color: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+}
+
+.category-exercise {
+  --category-color: linear-gradient(135deg, #ec4899 0%, #f472b6 100%);
+}
+
+/* ========== Focus Ring Styles ========== */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900;
+}
+
+.focus-ring-inset {
+  @apply focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500/50;
+}
+
+/* ========== Input Glow Effects ========== */
+.input-glow {
+  transition: all var(--duration-normal) var(--ease-out);
+}
+
+.input-glow:focus-within {
+  box-shadow: 0 0 0 3px hsl(234 89% 50% / 0.1), 0 0 20px hsl(234 89% 50% / 0.1);
+}
+
+.dark .input-glow:focus-within,
+[data-theme="dark"] .input-glow:focus-within {
+  box-shadow: 0 0 0 3px hsl(234 89% 60% / 0.15), 0 0 20px hsl(234 89% 60% / 0.1);
+}
+
+/* ========== Card Glow Effects ========== */
+.card-glow {
+  position: relative;
+  transition: all var(--duration-slow) var(--ease-out);
+}
+
+.card-glow::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, var(--primary-400), var(--primary-600));
+  opacity: 0;
+  z-index: -1;
+  transition: opacity var(--duration-slow) var(--ease-out);
+}
+
+.card-glow:hover::before {
+  opacity: 0.5;
+  filter: blur(8px);
+}
+
+/* ========== Pulsing Indicators ========== */
+.pulse-indicator {
+  position: relative;
+}
+
+.pulse-indicator::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  animation: pulse-ring 2s ease-out infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 hsl(234 89% 50% / 0.4);
+  }
+  100% {
+    box-shadow: 0 0 0 8px hsl(234 89% 50% / 0);
+  }
+}
+
+/* ========== 3D Card Effect ========== */
+.card-3d {
+  transform-style: preserve-3d;
+  perspective: 1000px;
+}
+
+.card-3d-inner {
+  transition: transform var(--duration-slow) var(--ease-out);
+}
+
+.card-3d:hover .card-3d-inner {
+  transform: rotateX(5deg) rotateY(-5deg) translateZ(10px);
+}
+
+/* ========== Decorative Elements ========== */
+.dots-pattern {
+  background-image: radial-gradient(circle, var(--gray-300) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.dark .dots-pattern,
+[data-theme="dark"] .dots-pattern {
+  background-image: radial-gradient(circle, var(--gray-700) 1px, transparent 1px);
+}
+
+/* ========== Scrollbar Styling ========== */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--gray-300);
+  border-radius: var(--radius-full);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-400);
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb,
+[data-theme="dark"] .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--gray-700);
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"] .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-600);
+}
+
+/* ========== Interactive States ========== */
+.interactive-scale {
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.interactive-scale:hover {
+  transform: scale(1.02);
+}
+
+.interactive-scale:active {
+  transform: scale(0.98);
+}
+
+.interactive-lift {
+  transition: transform var(--duration-normal) var(--ease-out), box-shadow var(--duration-normal)
+    var(--ease-out);
+}
+
+.interactive-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* ========== Selection Styling ========== */
+::selection {
+  background: hsl(234 89% 50% / 0.2);
+  color: inherit;
+}
+
+/* ========== Text Decoration ========== */
+.link-underline {
+  position: relative;
+  text-decoration: none;
+}
+
+.link-underline::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: currentColor;
+  transition: width var(--duration-normal) var(--ease-out);
+}
+
+.link-underline:hover::after {
+  width: 100%;
+}
