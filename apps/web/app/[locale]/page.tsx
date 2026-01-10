@@ -4,25 +4,16 @@ import { LanguageSwitcher } from '@/components/language-switcher'
 import { ThemeSwitcher } from '@/components/theme-switcher'
 import { Button, FadeIn, PageTransition } from '@/components/ui'
 import { useAuth } from '@/hooks'
-import { Link, useRouter } from '@/lib/i18n/routing'
+import { Link } from '@/lib/i18n/routing'
 import { BulbOutlined, HeartOutlined, RiseOutlined, RobotOutlined } from '@ant-design/icons'
 import { Spin } from 'antd'
 import { motion } from 'framer-motion'
-import { useEffect } from 'react'
 
 export default function HomePage() {
-  const router = useRouter()
   const { isAuthenticated, isLoading } = useAuth()
 
-  // Redirect authenticated users to dailyQuestion
-  useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      router.replace('/daily_question')
-    }
-  }, [isLoading, isAuthenticated, router])
-
-  // Show loading while checking auth or redirecting
-  if (isLoading || isAuthenticated) {
+  // Show loading while checking auth
+  if (isLoading) {
     return (
       <PageTransition>
         <div className="flex min-h-screen items-center justify-center">
@@ -121,24 +112,26 @@ export default function HomePage() {
             <div className="flex flex-col sm:flex-row items-center gap-4">
               <Link href="/daily_question">
                 <Button variant="primary" className="!px-8 !py-3 !text-lg !rounded-xl">
-                  开始探索
+                  {isAuthenticated ? '进入问答' : '开始探索'}
                 </Button>
               </Link>
-              <div className="flex items-center gap-3 text-sm text-gray-500">
-                <Link
-                  href="/login"
-                  className="font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
-                >
-                  登录
-                </Link>
-                <span className="text-gray-300 dark:text-gray-600">|</span>
-                <Link
-                  href="/register"
-                  className="font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
-                >
-                  注册
-                </Link>
-              </div>
+              {!isAuthenticated && (
+                <div className="flex items-center gap-3 text-sm text-gray-500">
+                  <Link
+                    href="/login"
+                    className="font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                  >
+                    登录
+                  </Link>
+                  <span className="text-gray-300 dark:text-gray-600">|</span>
+                  <Link
+                    href="/register"
+                    className="font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                  >
+                    注册
+                  </Link>
+                </div>
+              )}
             </div>
           </FadeIn>
         </div>
