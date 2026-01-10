@@ -83,7 +83,6 @@ export default function DailyQuestionPage() {
   const [answer, setAnswer] = useState('')
   const [todayQuestion, setTodayQuestion] = useState<string>(fallbackQuestion)
   const [questionId, setQuestionId] = useState<string | null>(null)
-  const [questionTag, setQuestionTag] = useState<string | null>(null)
   const [questionSource, setQuestionSource] = useState<'preference' | 'random'>('random')
   const [currentRating, setCurrentRating] = useState<number>(0)
   const [history, setHistory] = useState<AnswerHistory[]>([])
@@ -202,7 +201,6 @@ export default function DailyQuestionPage() {
       if (data.question) {
         setTodayQuestion(data.question.question)
         setQuestionId(data.question.id)
-        setQuestionTag(data.question.tag)
         setQuestionSource(data.source)
         setCurrentRating(0) // Reset rating for new question
         setIsApiAvailable(true)
@@ -469,14 +467,17 @@ export default function DailyQuestionPage() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <QuestionCircleOutlined className="text-purple-500" />
                     <span>{t('todayQuestion')}</span>
+                    {questionId && (
+                      <StarRating
+                        value={currentRating}
+                        onChange={handleRatingChange}
+                        disabled={rateMutation.isPending}
+                        size="small"
+                      />
+                    )}
                     {questionSource === 'preference' && (
                       <Tag color="purple" className="!text-xs">
                         为你推荐
-                      </Tag>
-                    )}
-                    {questionTag && (
-                      <Tag color="blue" className="!text-xs">
-                        {questionTag}
                       </Tag>
                     )}
                     <Text type="secondary" className="ml-auto text-sm font-normal">
@@ -537,18 +538,6 @@ export default function DailyQuestionPage() {
                         >
                           换一个问题
                         </Button>
-                      </div>
-
-                      {/* Rating Section */}
-                      <div className="mt-6 pt-4 border-t border-gray-200/50 dark:border-gray-700/50">
-                        <Text className="block mb-3 text-center text-gray-500">
-                          这个问题对你有帮助吗？
-                        </Text>
-                        <StarRating
-                          value={currentRating}
-                          onChange={handleRatingChange}
-                          disabled={rateMutation.isPending}
-                        />
                       </div>
                     </div>
                   </>
