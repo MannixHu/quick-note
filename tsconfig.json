@@ -13,7 +13,16 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "noUncheckedIndexedAccess": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "paths": {
+      "@/components/*": ["./apps/web/components/*"],
+      "@/hooks/*": ["./apps/web/hooks/*"],
+      "@/lib/*": ["./apps/web/lib/*"],
+      "@/styles/*": ["./apps/web/styles/*"],
+      "@app/api": ["./packages/api/src"],
+      "@app/db": ["./packages/db/src"],
+      "@app/shared": ["./packages/shared/src"]
+    }
   },
   "exclude": ["node_modules"]
 }

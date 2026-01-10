@@ -7,8 +7,13 @@
     "jsx": "preserve",
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "incremental": true,
+    "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
+      "@/components/*": ["./components/*"],
+      "@/hooks/*": ["./hooks/*"],
+      "@/lib/*": ["./lib/*"],
+      "@/styles/*": ["./styles/*"],
       "@app/api": ["../../packages/api/src"],
       "@app/db": ["../../packages/db/src"],
       "@app/shared": ["../../packages/shared/src"]
