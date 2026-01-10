@@ -1,15 +1,15 @@
 'use client'
 
+import { DashboardPanel } from '@/components/daily-question/DashboardPanel'
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { StarRating } from '@/components/star-rating'
 import { ThemeSwitcher } from '@/components/theme-switcher'
 import { Button, FadeIn, PageTransition, SlideUp } from '@/components/ui'
 import { useAuth } from '@/hooks'
-import { Link, useRouter } from '@/lib/i18n/routing'
+import { useRouter } from '@/lib/i18n/routing'
 import { trpc } from '@/lib/trpc/client'
 import {
   ApiOutlined,
-  ArrowLeftOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
   QuestionCircleOutlined,
@@ -49,6 +49,16 @@ const SAMPLE_QUESTIONS = [
   '你最近一次真正开心是什么时候？当时在做什么？',
 ]
 
+// 用户可自定义的角色提示词（格式要求由后端固定）
+const DEFAULT_AI_PROMPT = `你是一个专业的人生教练和心理咨询师。请生成深度思考问题，帮助用户进行自我反思和成长。
+
+要求：
+1. 问题要具有深度，能触发真正的思考
+2. 问题要具体，不要太抽象
+3. 问题要能帮助用户了解自己、规划未来或改善生活
+4. 每个问题都应该是开放性的，没有标准答案
+5. 问题应该用中文表达，贴近中国文化语境`
+
 interface AnswerHistory {
   id: string
   date: string
@@ -57,9 +67,10 @@ interface AnswerHistory {
 }
 
 interface AIConfig {
-  provider: 'openrouter' | 'deepseek'
   apiKey: string
   model?: string
+  baseURL: string
+  prompt?: string // 自定义生成问题的提示词
 }
 
 export default function DailyQuestionPage() {
@@ -106,11 +117,19 @@ export default function DailyQuestionPage() {
     if (savedConfig) {
       try {
         const config = JSON.parse(savedConfig) as AIConfig
+        // 如果没有 prompt，使用默认值
+        if (!config.prompt) {
+          config.prompt = DEFAULT_AI_PROMPT
+        }
         setAiConfig(config)
         settingsForm.setFieldsValue(config)
       } catch {
-        // ignore
+        // 加载失败时设置默认 prompt
+        settingsForm.setFieldsValue({ prompt: DEFAULT_AI_PROMPT })
       }
+    } else {
+      // 没有保存的配置时，设置默认 prompt
+      settingsForm.setFieldsValue({ prompt: DEFAULT_AI_PROMPT })
     }
   }, [settingsForm])
 
@@ -131,6 +150,12 @@ export default function DailyQuestionPage() {
   const questionRatingQuery = trpc.dailyQuestion.getQuestionRating.useQuery(
     { userId: userId ?? '', questionId: questionId ?? '' },
     { enabled: !!userId && !!questionId }
+  )
+
+  // @ts-expect-error - tRPC v11 RC type compatibility
+  const dashboardQuery = trpc.dailyQuestion.getDashboardSummary.useQuery(
+    { userId: userId ?? '' },
+    { retry: 2, enabled: !!userId }
   )
 
   // tRPC mutations
@@ -170,6 +195,7 @@ export default function DailyQuestionPage() {
       getNextQuestion()
     }
     if (answerMutation.error) {
+      console.error('Answer mutation failed:', answerMutation.error)
       message.error('保存失败，请重试')
     }
   }, [answerMutation.data, answerMutation.error])
@@ -290,7 +316,10 @@ export default function DailyQuestionPage() {
   }
 
   const handleRatingChange = (rating: number) => {
-    if (!userId || !questionId) return
+    if (!userId || !questionId) {
+      console.warn('Rating skipped: missing userId or questionId', { userId, questionId })
+      return
+    }
     setCurrentRating(rating)
     rateMutation.mutate(
       { userId, questionId, rating },
@@ -298,7 +327,8 @@ export default function DailyQuestionPage() {
         onSuccess: () => {
           message.success('评分已保存')
         },
-        onError: () => {
+        onError: (error: unknown) => {
+          console.error('Rating failed:', error)
           message.error('评分保存失败')
           setCurrentRating(0)
         },
@@ -316,8 +346,8 @@ export default function DailyQuestionPage() {
 
   const handlePingTest = () => {
     const formValues = settingsForm.getFieldsValue() as AIConfig
-    if (!formValues.provider || !formValues.apiKey) {
-      message.warning('请先填写服务商和 API Key')
+    if (!formValues.baseURL || !formValues.apiKey) {
+      message.warning('请先填写 API 地址和 API Key')
       return
     }
     setPingResult(null)
@@ -371,12 +401,24 @@ export default function DailyQuestionPage() {
     setEditingHistoryAnswer('')
   }
 
-  // Show loading while checking auth
-  if (authLoading || !isAuthenticated) {
+  // Show loading only while checking auth (not when redirecting)
+  if (authLoading) {
     return (
       <PageTransition>
         <div className="flex min-h-screen items-center justify-center">
           <Spin size="large" />
+        </div>
+      </PageTransition>
+    )
+  }
+
+  // If not authenticated after loading, the useEffect will redirect
+  // Show brief loading state during redirect
+  if (!isAuthenticated) {
+    return (
+      <PageTransition>
+        <div className="flex min-h-screen items-center justify-center">
+          <Spin size="large" tip="正在跳转登录..." />
         </div>
       </PageTransition>
     )
@@ -416,15 +458,6 @@ export default function DailyQuestionPage() {
           <header className="relative z-10 border-b border-gray-200/50 dark:border-gray-800/50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
             <div className="mx-auto flex max-w-3xl items-center justify-between px-4 md:px-6 py-3 md:py-4">
               <div className="flex items-center gap-2 md:gap-4">
-                <Link href="/">
-                  <Button
-                    variant="ghost"
-                    className="!text-gray-600 dark:!text-gray-400 hover:!text-primary-600 !px-2 md:!px-4"
-                  >
-                    <ArrowLeftOutlined />
-                    <span className="hidden sm:inline ml-2">{tCommon('back')}</span>
-                  </Button>
-                </Link>
                 <span className="text-lg md:text-xl font-semibold">{t('title')}</span>
                 {!isApiAvailable && <Tag color="orange">离线模式</Tag>}
               </div>
@@ -454,6 +487,15 @@ export default function DailyQuestionPage() {
         </FadeIn>
 
         <div className="relative z-10 mx-auto max-w-3xl px-4 md:px-6 py-4 md:py-8 flex flex-col gap-4 md:gap-6">
+          {/* Dashboard Panel */}
+          <DashboardPanel
+            weeklyProgress={dashboardQuery.data?.weeklyProgress ?? { answered: 0, total: 7 }}
+            currentStreak={dashboardQuery.data?.currentStreak ?? 0}
+            topTags={dashboardQuery.data?.topTags ?? []}
+            todayAnswered={dashboardQuery.data?.todayAnswered ?? false}
+            isLoading={dashboardQuery.isLoading}
+          />
+
           {/* Today's Question */}
           <SlideUp delay={0.2}>
             <motion.div
@@ -625,17 +667,38 @@ export default function DailyQuestionPage() {
           onClose={() => setSettingsOpen(false)}
           styles={{ wrapper: { width: 400 } }}
         >
-          <Form form={settingsForm} layout="vertical" onFinish={handleSaveSettings}>
+          <Form form={settingsForm} layout="vertical" onFinish={handleSaveSettings} autoComplete="off">
             <Form.Item
-              name="provider"
-              label="AI 服务商"
-              rules={[{ required: true, message: '请选择服务商' }]}
+              name="baseURL"
+              label="API 地址"
+              tooltip="支持 OpenAI 兼容接口，需以 /v1 结尾"
+              rules={[{ required: true, message: '请输入 API 地址' }]}
+              extra={<Text type="secondary" className="text-xs">需填写完整地址，如 https://api.example.com/v1 (会自动拼接 /chat/completions)</Text>}
             >
-              <Radio.Group>
-                <Radio.Button value="openrouter">OpenRouter</Radio.Button>
-                <Radio.Button value="deepseek">DeepSeek</Radio.Button>
-              </Radio.Group>
+              <Input placeholder="https://api.example.com/v1" autoComplete="new-password" data-form-type="other" />
             </Form.Item>
+
+            {/* 预设按钮 */}
+            <div className="mb-4 flex flex-wrap gap-2">
+              <AntButton
+                size="small"
+                onClick={() => settingsForm.setFieldsValue({ baseURL: 'https://openrouter.ai/api/v1' })}
+              >
+                OpenRouter
+              </AntButton>
+              <AntButton
+                size="small"
+                onClick={() => settingsForm.setFieldsValue({ baseURL: 'https://api.deepseek.com/v1' })}
+              >
+                DeepSeek
+              </AntButton>
+              <AntButton
+                size="small"
+                onClick={() => settingsForm.setFieldsValue({ baseURL: 'https://api.openai.com/v1' })}
+              >
+                OpenAI
+              </AntButton>
+            </div>
 
             <Form.Item
               name="apiKey"
@@ -646,7 +709,16 @@ export default function DailyQuestionPage() {
             </Form.Item>
 
             <Form.Item name="model" label="模型 (可选)">
-              <Input placeholder="默认: Claude 3.5 / DeepSeek Chat" />
+              <Input placeholder="如: gpt-4, claude-3.5-sonnet, deepseek-chat" autoComplete="new-password" />
+            </Form.Item>
+
+            <Form.Item
+              name="prompt"
+              label="角色提示词"
+              tooltip="自定义 AI 的角色和风格，输出格式由系统固定"
+              extra={<Text type="secondary" className="text-xs">只需描述 AI 角色和生成要求，JSON 格式由系统自动处理</Text>}
+            >
+              <Input.TextArea rows={6} autoComplete="off" />
             </Form.Item>
 
             {/* Ping Test */}

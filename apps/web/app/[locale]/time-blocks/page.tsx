@@ -306,12 +306,23 @@ export default function TimeBlocksPage() {
     hours: blocks.filter((b) => b.category.id === cat.id).length,
   }))
 
-  // Show loading while checking auth
-  if (authLoading || !isAuthenticated) {
+  // Show loading only while checking auth
+  if (authLoading) {
     return (
       <PageTransition>
         <div className="flex min-h-screen items-center justify-center">
           <Spin size="large" />
+        </div>
+      </PageTransition>
+    )
+  }
+
+  // If not authenticated after loading, the useEffect will redirect
+  if (!isAuthenticated) {
+    return (
+      <PageTransition>
+        <div className="flex min-h-screen items-center justify-center">
+          <Spin size="large" tip="正在跳转登录..." />
         </div>
       </PageTransition>
     )

@@ -4,14 +4,16 @@
  */
 
 interface AIConfig {
-  provider: 'openrouter' | 'deepseek'
   apiKey: string
   model?: string
+  baseURL: string // API 地址
+  prompt?: string // 自定义生成问题的提示词
 }
 
 interface GeneratedQuestion {
   question: string
   category: string
+  tag: string // INTP-based tag
 }
 
 /**
@@ -24,16 +26,17 @@ export class AIService {
 
   constructor(config: AIConfig) {
     this.config = config
+    this.baseURL = config.baseURL.replace(/\/$/, '') // 移除末尾斜杠
 
-    // 根据提供商设置 baseURL 和默认模型
-    if (config.provider === 'openrouter') {
-      this.baseURL = 'https://openrouter.ai/api/v1'
-      this.defaultModel = config.model || 'anthropic/claude-3.5-sonnet' // OpenRouter 上的 Claude
-    } else if (config.provider === 'deepseek') {
-      this.baseURL = 'https://api.deepseek.com/v1'
-      this.defaultModel = config.model || 'deepseek-chat'
+    // 根据 baseURL 自动设置默认模型
+    if (config.model) {
+      this.defaultModel = config.model
+    } else if (this.baseURL.includes('openrouter')) {
+      this.defaultModel = 'anthropic/claude-3.5-sonnet'
+    } else if (this.baseURL.includes('deepseek')) {
+      this.defaultModel = 'deepseek-chat'
     } else {
-      throw new Error(`Unsupported AI provider: ${config.provider}`)
+      this.defaultModel = 'gpt-3.5-turbo'
     }
   }
 
@@ -41,7 +44,14 @@ export class AIService {
    * 测试 API 连接是否正常
    * @returns 返回延迟时间（毫秒）和模型信息
    */
-  async ping(): Promise<{ latency: number; model: string; provider: string }> {
+  /**
+   * 判断是否是 OpenRouter 服务
+   */
+  private isOpenRouter(): boolean {
+    return this.baseURL.includes('openrouter')
+  }
+
+  async ping(): Promise<{ latency: number; model: string; baseURL: string }> {
     const startTime = Date.now()
 
     try {
@@ -50,8 +60,8 @@ export class AIService {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${this.config.apiKey}`,
-          ...(this.config.provider === 'openrouter' && {
-            'HTTP-Referer': 'https://github.com/your-repo',
+          ...(this.isOpenRouter() && {
+            'HTTP-Referer': 'https://github.com/mannix-lei/quick-note',
             'X-Title': 'QuickNote App',
           }),
         },
@@ -77,7 +87,7 @@ export class AIService {
       return {
         latency,
         model: this.defaultModel,
-        provider: this.config.provider,
+        baseURL: this.baseURL,
       }
     } catch (error) {
       const latency = Date.now() - startTime
@@ -102,29 +112,45 @@ export class AIService {
    * 批量生成深度思考问题
    */
   async generateQuestions(count = 5, categories?: string[]): Promise<GeneratedQuestion[]> {
-    const categoryHint = categories?.length
-      ? `问题类别应该从以下选择: ${categories.join(', ')}`
-      : '问题类别可以是: reflection(反思), planning(规划), gratitude(感恩), growth(成长), relationships(人际关系), values(价值观)'
+    // 可选的类别列表
+    const categoryList = categories?.length
+      ? categories.join(', ')
+      : 'reflection, planning, gratitude, growth, relationships, values, logic, philosophy, creativity, psychology'
 
-    const prompt = `你是一个专业的人生教练和心理咨询师。请生成 ${count} 个深度思考问题，帮助用户进行自我反思和成长。
+    // 固定的标签列表
+    const tagList = 'thinking, introspection, learning, possibilities, optimization, social, values, action'
+
+    // 用户可自定义的角色提示词（描述AI的角色和风格）
+    const defaultRolePrompt = `你是一个专业的人生教练和心理咨询师。请生成深度思考问题，帮助用户进行自我反思和成长。
 
 要求：
 1. 问题要具有深度，能触发真正的思考
 2. 问题要具体，不要太抽象
 3. 问题要能帮助用户了解自己、规划未来或改善生活
-4. ${categoryHint}
-5. 每个问题都应该是开放性的，没有标准答案
-6. 问题应该用中文表达，贴近中国文化语境
+4. 每个问题都应该是开放性的，没有标准答案
+5. 问题应该用中文表达，贴近中国文化语境`
+
+    const rolePrompt = this.config.prompt || defaultRolePrompt
+
+    // 固定的格式要求（代码依赖，不可自定义）
+    const formatPrompt = `
+请生成 ${count} 个问题。
+
+category 必须从以下选择: ${categoryList}
+tag 必须从以下选择: ${tagList}
 
 请以 JSON 格式返回，格式如下：
 [
   {
     "question": "问题文本",
-    "category": "问题类别"
+    "category": "类别(英文)",
+    "tag": "标签(英文)"
   }
 ]
 
 只返回 JSON，不要其他解释。`
+
+    const prompt = rolePrompt + formatPrompt
 
     try {
       const response = await fetch(`${this.baseURL}/chat/completions`, {
@@ -132,7 +158,7 @@ export class AIService {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${this.config.apiKey}`,
-          ...(this.config.provider === 'openrouter' && {
+          ...(this.isOpenRouter() && {
             'HTTP-Referer': 'https://github.com/your-repo', // OpenRouter 要求
             'X-Title': 'QuickNote App',
           }),
@@ -218,7 +244,7 @@ ${recentAnswers}
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${this.config.apiKey}`,
-          ...(this.config.provider === 'openrouter' && {
+          ...(this.isOpenRouter() && {
             'HTTP-Referer': 'https://github.com/your-repo',
             'X-Title': 'QuickNote App',
           }),
@@ -274,31 +300,23 @@ ${recentAnswers}
  * @param customConfig 可选的自定义配置（从前端传入）
  */
 export function createAIService(customConfig?: {
-  provider?: string
   apiKey?: string
   model?: string
+  baseURL?: string
+  prompt?: string
 }): AIService | null {
-  // 优先使用自定义配置，否则使用环境变量
-  const provider = (customConfig?.provider || process.env.AI_PROVIDER) as
-    | 'openrouter'
-    | 'deepseek'
-    | undefined
-  const apiKey =
-    customConfig?.apiKey ||
-    (provider === 'openrouter'
-      ? process.env.OPENROUTER_API_KEY
-      : provider === 'deepseek'
-        ? process.env.DEEPSEEK_API_KEY
-        : undefined)
+  const apiKey = customConfig?.apiKey || process.env.AI_API_KEY
+  const baseURL = customConfig?.baseURL || process.env.AI_BASE_URL
 
-  if (!provider || !apiKey) {
-    console.warn('AI service not configured. Set AI_PROVIDER and corresponding API key.')
+  if (!apiKey || !baseURL) {
+    console.warn('AI service not configured. Set AI_BASE_URL and AI_API_KEY.')
     return null
   }
 
   return new AIService({
-    provider,
     apiKey,
+    baseURL,
     model: customConfig?.model || process.env.AI_MODEL,
+    prompt: customConfig?.prompt,
   })
 }

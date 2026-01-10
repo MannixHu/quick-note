@@ -800,9 +800,10 @@ export const dailyQuestionRouter = createTRPCRouter({
         categories: z.array(z.string()).optional(),
         aiConfig: z
           .object({
-            provider: z.enum(['openrouter', 'deepseek']),
+            baseURL: z.string(),
             apiKey: z.string(),
             model: z.string().optional(),
+            prompt: z.string().optional(),
           })
           .optional(),
       })
@@ -820,9 +821,15 @@ export const dailyQuestionRouter = createTRPCRouter({
         // 使用 AI 生成问题
         const generatedQuestions = await aiService.generateQuestions(input.count, input.categories)
 
-        // 保存到数据库
+        // 保存到数据库，确保数据格式正确
+        const questionsToSave = generatedQuestions.map((q) => ({
+          question: q.question,
+          category: q.category || null,
+          tag: q.tag || null,
+        }))
+
         const created = await ctx.prisma.dailyQuestion.createMany({
-          data: generatedQuestions,
+          data: questionsToSave,
           skipDuplicates: true,
         })
 
@@ -848,9 +855,10 @@ export const dailyQuestionRouter = createTRPCRouter({
         usePersonalization: z.boolean().default(false),
         aiConfig: z
           .object({
-            provider: z.enum(['openrouter', 'deepseek']),
+            baseURL: z.string(),
             apiKey: z.string(),
             model: z.string().optional(),
+            prompt: z.string().optional(),
           })
           .optional(),
       })
@@ -1023,9 +1031,10 @@ export const dailyQuestionRouter = createTRPCRouter({
     .input(
       z.object({
         aiConfig: z.object({
-          provider: z.enum(['openrouter', 'deepseek']),
+          baseURL: z.string(),
           apiKey: z.string(),
           model: z.string().optional(),
+          prompt: z.string().optional(),
         }),
       })
     )
@@ -1048,7 +1057,7 @@ export const dailyQuestionRouter = createTRPCRouter({
           error: error instanceof Error ? error.message : 'Unknown error',
           latency: 0,
           model: input.aiConfig.model || 'default',
-          provider: input.aiConfig.provider,
+          baseURL: input.aiConfig.baseURL,
         }
       }
     }),
@@ -1315,5 +1324,396 @@ export const dailyQuestionRouter = createTRPCRouter({
         question,
         source: usePreference && question ? 'preference' : 'random',
       }
+    }),
+
+  // ============================================
+  // Review & Statistics APIs
+  // ============================================
+
+  /**
+   * Get streak statistics (consecutive days answered)
+   */
+  getStreakStats: publicProcedure.input(z.object({ userId: z.string() })).query(async ({ ctx, input }) => {
+    // Get all unique answer dates for the user
+    const answers = await ctx.prisma.questionAnswer.findMany({
+      where: { userId: input.userId },
+      select: { date: true },
+      orderBy: { date: 'desc' },
+    })
+
+    if (answers.length === 0) {
+      return {
+        currentStreak: 0,
+        longestStreak: 0,
+        lastAnswerDate: null,
+        weeklyActivity: [false, false, false, false, false, false, false],
+        totalAnsweredDays: 0,
+      }
+    }
+
+    // Get unique dates (normalize to date only)
+    const uniqueDates = [...new Set(answers.map((a) => a.date.toISOString().split('T')[0]))]
+      .filter((d): d is string => d !== undefined)
+      .map((d) => new Date(d))
+      .sort((a, b) => b.getTime() - a.getTime())
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    // Calculate current streak
+    let currentStreak = 0
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+
+    // Check if answered today or yesterday to start counting
+    const latestDate = uniqueDates[0]
+    if (latestDate) {
+      const latestDateNorm = new Date(latestDate)
+      latestDateNorm.setHours(0, 0, 0, 0)
+
+      if (latestDateNorm.getTime() === today.getTime() || latestDateNorm.getTime() === yesterday.getTime()) {
+        currentStreak = 1
+        let checkDate = new Date(latestDateNorm)
+        checkDate.setDate(checkDate.getDate() - 1)
+
+        for (let i = 1; i < uniqueDates.length; i++) {
+          const d = new Date(uniqueDates[i] as Date)
+          d.setHours(0, 0, 0, 0)
+          if (d.getTime() === checkDate.getTime()) {
+            currentStreak++
+            checkDate.setDate(checkDate.getDate() - 1)
+          } else {
+            break
+          }
+        }
+      }
+    }
+
+    // Calculate longest streak
+    let longestStreak = 1
+    let tempStreak = 1
+    for (let i = 1; i < uniqueDates.length; i++) {
+      const curr = new Date(uniqueDates[i] as Date)
+      const prev = new Date(uniqueDates[i - 1] as Date)
+      curr.setHours(0, 0, 0, 0)
+      prev.setHours(0, 0, 0, 0)
+
+      const diffDays = Math.round((prev.getTime() - curr.getTime()) / (1000 * 60 * 60 * 24))
+      if (diffDays === 1) {
+        tempStreak++
+        longestStreak = Math.max(longestStreak, tempStreak)
+      } else {
+        tempStreak = 1
+      }
+    }
+
+    // Calculate weekly activity (Mon-Sun, current week)
+    const weekStart = new Date(today)
+    const dayOfWeek = today.getDay()
+    const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+    weekStart.setDate(weekStart.getDate() - daysToMonday)
+    weekStart.setHours(0, 0, 0, 0)
+
+    const weeklyActivity: boolean[] = []
+    for (let i = 0; i < 7; i++) {
+      const checkDate = new Date(weekStart)
+      checkDate.setDate(checkDate.getDate() + i)
+      const dateStr = checkDate.toISOString().split('T')[0]
+      weeklyActivity.push(uniqueDates.some((d) => d.toISOString().split('T')[0] === dateStr))
+    }
+
+    return {
+      currentStreak,
+      longestStreak: Math.max(longestStreak, currentStreak),
+      lastAnswerDate: uniqueDates[0] || null,
+      weeklyActivity,
+      totalAnsweredDays: uniqueDates.length,
+    }
+  }),
+
+  /**
+   * Get dashboard summary (compact stats for daily-question page)
+   */
+  getDashboardSummary: publicProcedure.input(z.object({ userId: z.string() })).query(async ({ ctx, input }) => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    // Get this week's date range (Mon-Sun)
+    const weekStart = new Date(today)
+    const dayOfWeek = today.getDay()
+    const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+    weekStart.setDate(weekStart.getDate() - daysToMonday)
+    weekStart.setHours(0, 0, 0, 0)
+
+    // Count answered days this week
+    const weekAnswers = await ctx.prisma.questionAnswer.findMany({
+      where: {
+        userId: input.userId,
+        date: { gte: weekStart },
+      },
+      select: { date: true },
+    })
+
+    const uniqueWeekDays = new Set(weekAnswers.map((a) => a.date.toISOString().split('T')[0]))
+
+    // Check if answered today
+    const todayAnswer = await ctx.prisma.questionAnswer.findFirst({
+      where: {
+        userId: input.userId,
+        date: today,
+      },
+    })
+
+    // Get streak stats
+    const streakData = await ctx.prisma.questionAnswer.findMany({
+      where: { userId: input.userId },
+      select: { date: true },
+      orderBy: { date: 'desc' },
+    })
+
+    let currentStreak = 0
+    if (streakData.length > 0) {
+      const uniqueDates = [...new Set(streakData.map((a) => a.date.toISOString().split('T')[0]))]
+        .filter((d): d is string => d !== undefined)
+        .map((d) => new Date(d))
+        .sort((a, b) => b.getTime() - a.getTime())
+
+      const yesterday = new Date(today)
+      yesterday.setDate(yesterday.getDate() - 1)
+
+      const latestDate = uniqueDates[0]
+      if (latestDate) {
+        const latestDateNorm = new Date(latestDate)
+        latestDateNorm.setHours(0, 0, 0, 0)
+
+        if (latestDateNorm.getTime() === today.getTime() || latestDateNorm.getTime() === yesterday.getTime()) {
+          currentStreak = 1
+          let checkDate = new Date(latestDateNorm)
+          checkDate.setDate(checkDate.getDate() - 1)
+
+          for (let i = 1; i < uniqueDates.length; i++) {
+            const d = new Date(uniqueDates[i] as Date)
+            d.setHours(0, 0, 0, 0)
+            if (d.getTime() === checkDate.getTime()) {
+              currentStreak++
+              checkDate.setDate(checkDate.getDate() - 1)
+            } else {
+              break
+            }
+          }
+        }
+      }
+    }
+
+    // Get top 3 preferred tags
+    const highRatedQuestions = await ctx.prisma.questionRating.findMany({
+      where: {
+        userId: input.userId,
+        rating: { gte: 4 },
+      },
+      include: {
+        question: { select: { category: true } },
+      },
+    })
+
+    const tagCounts: Record<string, number> = {}
+    for (const rating of highRatedQuestions) {
+      const tag = rating.question.category || 'unknown'
+      tagCounts[tag] = (tagCounts[tag] || 0) + 1
+    }
+
+    const topTags = Object.entries(tagCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([tag, count]) => ({ tag, count }))
+
+    return {
+      weeklyProgress: {
+        answered: uniqueWeekDays.size,
+        total: 7,
+      },
+      currentStreak,
+      topTags,
+      todayAnswered: !!todayAnswer,
+    }
+  }),
+
+  /**
+   * Get review statistics for a period (week/month)
+   */
+  getReviewStats: publicProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        period: z.enum(['week', 'month']),
+        date: z.string().optional(), // ISO date string, defaults to today
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const baseDate = input.date ? new Date(input.date) : new Date()
+      baseDate.setHours(0, 0, 0, 0)
+
+      let startDate: Date
+      let endDate: Date = new Date(baseDate)
+      endDate.setHours(23, 59, 59, 999)
+
+      if (input.period === 'week') {
+        // Get current week (Mon-Sun)
+        startDate = new Date(baseDate)
+        const dayOfWeek = baseDate.getDay()
+        const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+        startDate.setDate(startDate.getDate() - daysToMonday)
+        startDate.setHours(0, 0, 0, 0)
+      } else {
+        // Get current month
+        startDate = new Date(baseDate.getFullYear(), baseDate.getMonth(), 1)
+        endDate = new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 0, 23, 59, 59, 999)
+      }
+
+      // Get all answers in the period
+      const answers = await ctx.prisma.questionAnswer.findMany({
+        where: {
+          userId: input.userId,
+          date: {
+            gte: startDate,
+            lte: endDate,
+          },
+        },
+        include: {
+          question: true,
+        },
+        orderBy: { date: 'desc' },
+      })
+
+      // Get ratings for answered questions
+      const questionIds = [...new Set(answers.map((a) => a.questionId))]
+      const ratings = await ctx.prisma.questionRating.findMany({
+        where: {
+          userId: input.userId,
+          questionId: { in: questionIds },
+        },
+      })
+      const ratingMap = new Map(ratings.map((r) => [r.questionId, r.rating]))
+
+      // Calculate unique answered days
+      const uniqueDays = new Set(answers.map((a) => a.date.toISOString().split('T')[0]))
+
+      // Calculate tag distribution
+      const tagCounts: Record<string, number> = {}
+      for (const answer of answers) {
+        const tag = answer.question.category || 'unknown'
+        tagCounts[tag] = (tagCounts[tag] || 0) + 1
+      }
+
+      const totalAnswers = answers.length
+      const tagDistribution = Object.entries(tagCounts)
+        .map(([tag, count]) => ({
+          tag,
+          count,
+          percentage: totalAnswers > 0 ? Math.round((count / totalAnswers) * 100) : 0,
+        }))
+        .sort((a, b) => b.count - a.count)
+
+      // Get high-rated questions (4-5 stars)
+      const highRatedQuestions = answers
+        .filter((a) => (ratingMap.get(a.questionId) || 0) >= 4)
+        .map((a) => ({
+          id: a.id,
+          question: a.question.question,
+          answer: a.answer,
+          rating: ratingMap.get(a.questionId) || 0,
+          date: a.date,
+          category: a.question.category,
+        }))
+
+      // Prepare answer list with ratings
+      const answersWithRatings = answers.map((a) => ({
+        id: a.id,
+        question: a.question.question,
+        questionId: a.questionId,
+        answer: a.answer,
+        date: a.date,
+        rating: ratingMap.get(a.questionId) || null,
+        category: a.question.category,
+      }))
+
+      return {
+        period: input.period,
+        startDate,
+        endDate,
+        totalAnswers,
+        answeredDays: uniqueDays.size,
+        avgAnswersPerDay: uniqueDays.size > 0 ? Math.round((totalAnswers / uniqueDays.size) * 10) / 10 : 0,
+        tagDistribution,
+        highRatedQuestions,
+        answers: answersWithRatings,
+      }
+    }),
+
+  /**
+   * Get growth comparison - same category questions answered over time
+   */
+  getGrowthComparison: publicProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        category: z.string().optional(),
+        limit: z.number().default(5),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      // Get all answers with their questions
+      const answers = await ctx.prisma.questionAnswer.findMany({
+        where: { userId: input.userId },
+        include: {
+          question: true,
+        },
+        orderBy: { date: 'asc' },
+      })
+
+      if (answers.length === 0) {
+        return { comparisons: [] }
+      }
+
+      // Group by category
+      const byCategory: Record<string, typeof answers> = {}
+      for (const answer of answers) {
+        const category = answer.question.category || 'unknown'
+        if (input.category && category !== input.category) continue
+        if (!byCategory[category]) {
+          byCategory[category] = []
+        }
+        byCategory[category].push(answer)
+      }
+
+      // Find categories with multiple answers for comparison
+      const comparisons = Object.entries(byCategory)
+        .filter(([_, items]) => items.length >= 2)
+        .slice(0, input.limit)
+        .map(([category, items]) => {
+          // Get first and last answers for comparison
+          const sortedItems = items.sort((a, b) => a.date.getTime() - b.date.getTime())
+          return {
+            category,
+            totalAnswers: items.length,
+            firstAnswer: {
+              question: sortedItems[0]?.question.question,
+              answer: sortedItems[0]?.answer,
+              date: sortedItems[0]?.date,
+            },
+            latestAnswer: {
+              question: sortedItems[sortedItems.length - 1]?.question.question,
+              answer: sortedItems[sortedItems.length - 1]?.answer,
+              date: sortedItems[sortedItems.length - 1]?.date,
+            },
+            allAnswers: sortedItems.map((a) => ({
+              question: a.question.question,
+              answer: a.answer,
+              date: a.date,
+            })),
+          }
+        })
+
+      return { comparisons }
     }),
 })

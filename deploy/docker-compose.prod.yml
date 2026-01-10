@@ -1,0 +1,36 @@
+# Quick-Note 生产部署配置 (使用共享基础服务)
+# 路径: /docker/quick-note/docker-compose.prod.yml
+# 依赖: shared-infra (PostgreSQL + Redis)
+
+services:
+  app:
+    image: ghcr.io/${GITHUB_REPO:-mannix-lei/quick-note}:${IMAGE_TAG:-latest}
+    container_name: quick-note
+    restart: unless-stopped
+    ports:
+      - "3366:3000"
+    environment:
+      - NODE_ENV=production
+      # 数据库连接 (使用共享 PostgreSQL)
+      - DATABASE_URL=postgresql://${DB_USER:-quicknote}:${DB_PASSWORD}@shared-postgres:5432/${DB_NAME:-quicknote}
+      # NextAuth 配置
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3366}
+      # Redis 连接 (可选，用于缓存/会话)
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-}@shared-redis:6379
+      # AI 配置 (可选，用户也可在前端配置)
+      - AI_BASE_URL=${AI_BASE_URL:-}
+      - AI_API_KEY=${AI_API_KEY:-}
+      - AI_MODEL=${AI_MODEL:-}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - shared-network
+
+networks:
+  shared-network:
+    external: true  # 使用 shared-infra 创建的共享网络

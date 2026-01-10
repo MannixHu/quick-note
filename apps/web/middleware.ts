@@ -27,10 +27,10 @@ export default function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  // 已登录访问登录页，重定向到首页
+  // 已登录访问登录页，重定向到每日问答
   if (authToken && pathnameWithoutLocale === '/login') {
     const locale = pathname.match(/^\/(zh-CN|en)/)?.[1] || ''
-    const homeUrl = new URL(locale ? `/${locale}/time-blocks` : '/time-blocks', request.url)
+    const homeUrl = new URL(locale ? `/${locale}/daily-question` : '/daily-question', request.url)
     return NextResponse.redirect(homeUrl)
   }
 

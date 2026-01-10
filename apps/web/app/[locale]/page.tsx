@@ -4,16 +4,36 @@ import { LanguageSwitcher } from '@/components/language-switcher'
 import { ThemeSwitcher } from '@/components/theme-switcher'
 import { Button, FadeIn, PageTransition, StaggerChildren } from '@/components/ui'
 import { useAuth } from '@/hooks'
-import { Link } from '@/lib/i18n/routing'
+import { Link, useRouter } from '@/lib/i18n/routing'
 import { ClockCircleOutlined, LogoutOutlined, QuestionCircleOutlined } from '@ant-design/icons'
-import { App } from 'antd'
+import { App, Spin } from 'antd'
 import { motion } from 'framer-motion'
 import { useTranslations } from 'next-intl'
+import { useEffect } from 'react'
 
 export default function HomePage() {
   const { message } = App.useApp()
   const t = useTranslations('home')
-  const { isAuthenticated, logout } = useAuth()
+  const router = useRouter()
+  const { isAuthenticated, isLoading, logout } = useAuth()
+
+  // Redirect authenticated users to daily-question
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace('/daily-question')
+    }
+  }, [isLoading, isAuthenticated, router])
+
+  // Show loading while checking auth or redirecting
+  if (isLoading || isAuthenticated) {
+    return (
+      <PageTransition>
+        <div className="flex min-h-screen items-center justify-center">
+          <Spin size="large" />
+        </div>
+      </PageTransition>
+    )
+  }
 
   const handleLogout = () => {
     logout()

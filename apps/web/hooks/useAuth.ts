@@ -35,9 +35,14 @@ export function useAuth(): UseAuthReturn {
       if (stored) {
         const parsed = JSON.parse(stored)
         setUser(parsed)
+      } else {
+        // No user in localStorage, clear any stale auth cookie to prevent redirect loops
+        document.cookie = 'auth-token=; path=/; max-age=0'
       }
     } catch (error) {
       console.error('Error reading user from localStorage:', error)
+      // Clear cookie on error too
+      document.cookie = 'auth-token=; path=/; max-age=0'
     } finally {
       setIsLoading(false)
     }
