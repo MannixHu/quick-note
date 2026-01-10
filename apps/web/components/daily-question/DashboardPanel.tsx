@@ -3,8 +3,8 @@
 import { WeeklyActivityDots } from '@/components/activity'
 import { CalendarOutlined, FireOutlined, RightOutlined, TagOutlined } from '@ant-design/icons'
 import { motion } from 'framer-motion'
+import { useLocale } from 'next-intl'
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
 
 interface Activity {
   date: string
@@ -25,7 +25,7 @@ interface DashboardPanelProps {
 }
 
 // Category label mapping
-const CATEGORY_LABELS: Record<string, string> = {
+const CATEGORY_LABELS_ZH: Record<string, string> = {
   reflection: '反思',
   planning: '规划',
   gratitude: '感恩',
@@ -61,6 +61,42 @@ const CATEGORY_LABELS: Record<string, string> = {
   unknown: '其他',
 }
 
+const CATEGORY_LABELS_EN: Record<string, string> = {
+  reflection: 'Reflection',
+  planning: 'Planning',
+  gratitude: 'Gratitude',
+  growth: 'Growth',
+  relationships: 'Relationships',
+  values: 'Values',
+  logic: 'Logic',
+  philosophy: 'Philosophy',
+  science: 'Science',
+  abstract: 'Abstract',
+  systems: 'Systems',
+  creativity: 'Creativity',
+  knowledge: 'Knowledge',
+  self: 'Self',
+  future: 'Future',
+  thought_experiment: 'Thought Experiment',
+  decision: 'Decision',
+  curiosity: 'Curiosity',
+  psychology: 'Psychology',
+  mathematics: 'Mathematics',
+  ethics: 'Ethics',
+  language: 'Language',
+  consciousness: 'Consciousness',
+  history: 'History',
+  paradox: 'Paradox',
+  metacognition: 'Metacognition',
+  problem_solving: 'Problem Solving',
+  information: 'Information',
+  complexity: 'Complexity',
+  analogy: 'Analogy',
+  existence: 'Existence',
+  innovation: 'Innovation',
+  unknown: 'Other',
+}
+
 export function DashboardPanel({
   weeklyProgress,
   currentStreak,
@@ -69,8 +105,9 @@ export function DashboardPanel({
   weeklyActivities = [],
   isLoading,
 }: DashboardPanelProps) {
-  const params = useParams()
-  const locale = params?.locale || 'zh'
+  const locale = useLocale()
+  const isZh = locale === 'zh-CN'
+  const CATEGORY_LABELS = isZh ? CATEGORY_LABELS_ZH : CATEGORY_LABELS_EN
 
   if (isLoading) {
     return (
@@ -101,7 +138,9 @@ export function DashboardPanel({
           <div className="flex items-center gap-2">
             <CalendarOutlined className="text-primary-500 text-lg" />
             <div className="flex items-center gap-2">
-              <span className="text-sm text-neutral-600 dark:text-neutral-400">本周</span>
+              <span className="text-sm text-neutral-600 dark:text-neutral-400">
+                {isZh ? '本周' : 'This Week'}
+              </span>
               <WeeklyActivityDots activities={weeklyActivities} isLoading={isLoading} />
               <span className="text-sm font-medium text-neutral-800 dark:text-neutral-200">
                 {weeklyProgress.answered}/{weeklyProgress.total}
@@ -116,11 +155,20 @@ export function DashboardPanel({
             />
             <span className="text-sm text-neutral-600 dark:text-neutral-400">
               {currentStreak > 0 ? (
-                <>
-                  <span className="font-semibold text-orange-500">{currentStreak}</span> 天连续
-                </>
-              ) : (
+                isZh ? (
+                  <>
+                    <span className="font-semibold text-orange-500">{currentStreak}</span> 天连续
+                  </>
+                ) : (
+                  <>
+                    <span className="font-semibold text-orange-500">{currentStreak}</span> day
+                    streak
+                  </>
+                )
+              ) : isZh ? (
                 '开始打卡'
+              ) : (
+                'Start streak'
               )}
             </span>
           </div>
@@ -129,7 +177,9 @@ export function DashboardPanel({
           {todayAnswered && (
             <div className="hidden sm:flex items-center gap-1.5 px-2 py-0.5 bg-green-100 dark:bg-green-900/30 rounded-full">
               <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />
-              <span className="text-xs text-green-700 dark:text-green-400">今日已完成</span>
+              <span className="text-xs text-green-700 dark:text-green-400">
+                {isZh ? '今日已完成' : 'Done today'}
+              </span>
             </div>
           )}
 
@@ -156,7 +206,7 @@ export function DashboardPanel({
           href={`/${locale}/daily_question/review`}
           className="flex items-center gap-1 text-sm text-primary-500 hover:text-primary-600 transition-colors group"
         >
-          <span>查看回顾</span>
+          <span>{isZh ? '查看回顾' : 'View Review'}</span>
           <RightOutlined className="text-xs group-hover:translate-x-0.5 transition-transform" />
         </Link>
       </div>

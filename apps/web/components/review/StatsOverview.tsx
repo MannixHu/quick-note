@@ -7,6 +7,7 @@ import {
   FireOutlined,
 } from '@ant-design/icons'
 import { motion } from 'framer-motion'
+import { useLocale } from 'next-intl'
 
 interface StatsOverviewProps {
   totalAnswers: number
@@ -57,6 +58,9 @@ export function StatsOverview({
   avgAnswersPerDay,
   isLoading,
 }: StatsOverviewProps) {
+  const locale = useLocale()
+  const isZh = locale === 'zh-CN'
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -80,30 +84,30 @@ export function StatsOverview({
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       <StatCard
         icon={<FileTextOutlined className="text-white text-lg" />}
-        label="总回答数"
+        label={isZh ? '总回答数' : 'Total Answers'}
         value={totalAnswers}
         color="bg-gradient-to-br from-primary-500 to-primary-600"
         delay={0.1}
       />
       <StatCard
         icon={<CalendarOutlined className="text-white text-lg" />}
-        label="回答天数"
+        label={isZh ? '回答天数' : 'Active Days'}
         value={answeredDays}
-        suffix="天"
+        suffix={isZh ? '天' : 'days'}
         color="bg-gradient-to-br from-green-500 to-green-600"
         delay={0.15}
       />
       <StatCard
         icon={<FireOutlined className="text-white text-lg" />}
-        label="连续打卡"
+        label={isZh ? '连续打卡' : 'Streak'}
         value={currentStreak}
-        suffix="天"
+        suffix={isZh ? '天' : 'days'}
         color="bg-gradient-to-br from-orange-500 to-orange-600"
         delay={0.2}
       />
       <StatCard
         icon={<FieldTimeOutlined className="text-white text-lg" />}
-        label="日均回答"
+        label={isZh ? '日均回答' : 'Daily Avg'}
         value={avgAnswersPerDay}
         color="bg-gradient-to-br from-purple-500 to-purple-600"
         delay={0.25}

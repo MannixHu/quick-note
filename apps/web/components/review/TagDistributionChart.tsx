@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import { useLocale } from 'next-intl'
 
 interface TagStat {
   tag: string
@@ -14,7 +15,7 @@ interface TagDistributionChartProps {
 }
 
 // Category label and color mapping
-const CATEGORY_CONFIG: Record<string, { label: string; color: string }> = {
+const CATEGORY_CONFIG_ZH: Record<string, { label: string; color: string }> = {
   reflection: { label: '反思', color: '#9333ea' },
   planning: { label: '规划', color: '#3b82f6' },
   gratitude: { label: '感恩', color: '#f59e0b' },
@@ -50,9 +51,47 @@ const CATEGORY_CONFIG: Record<string, { label: string; color: string }> = {
   unknown: { label: '其他', color: '#6b7280' },
 }
 
-const getConfig = (tag: string) => CATEGORY_CONFIG[tag] || { label: tag, color: '#6b7280' }
+const CATEGORY_CONFIG_EN: Record<string, { label: string; color: string }> = {
+  reflection: { label: 'Reflection', color: '#9333ea' },
+  planning: { label: 'Planning', color: '#3b82f6' },
+  gratitude: { label: 'Gratitude', color: '#f59e0b' },
+  growth: { label: 'Growth', color: '#22c55e' },
+  relationships: { label: 'Relationships', color: '#ec4899' },
+  values: { label: 'Values', color: '#8b5cf6' },
+  logic: { label: 'Logic', color: '#06b6d4' },
+  philosophy: { label: 'Philosophy', color: '#6366f1' },
+  science: { label: 'Science', color: '#14b8a6' },
+  abstract: { label: 'Abstract', color: '#a855f7' },
+  systems: { label: 'Systems', color: '#0ea5e9' },
+  creativity: { label: 'Creativity', color: '#f43f5e' },
+  knowledge: { label: 'Knowledge', color: '#84cc16' },
+  self: { label: 'Self', color: '#d946ef' },
+  future: { label: 'Future', color: '#0891b2' },
+  thought_experiment: { label: 'Thought Exp.', color: '#7c3aed' },
+  decision: { label: 'Decision', color: '#059669' },
+  curiosity: { label: 'Curiosity', color: '#ea580c' },
+  psychology: { label: 'Psychology', color: '#db2777' },
+  mathematics: { label: 'Mathematics', color: '#2563eb' },
+  ethics: { label: 'Ethics', color: '#65a30d' },
+  language: { label: 'Language', color: '#c026d3' },
+  consciousness: { label: 'Consciousness', color: '#7c3aed' },
+  history: { label: 'History', color: '#b45309' },
+  paradox: { label: 'Paradox', color: '#be123c' },
+  metacognition: { label: 'Metacognition', color: '#4f46e5' },
+  problem_solving: { label: 'Problem Solving', color: '#0d9488' },
+  information: { label: 'Information', color: '#0284c7' },
+  complexity: { label: 'Complexity', color: '#9333ea' },
+  analogy: { label: 'Analogy', color: '#c2410c' },
+  existence: { label: 'Existence', color: '#6d28d9' },
+  innovation: { label: 'Innovation', color: '#15803d' },
+  unknown: { label: 'Other', color: '#6b7280' },
+}
 
 export function TagDistributionChart({ data, isLoading }: TagDistributionChartProps) {
+  const locale = useLocale()
+  const isZh = locale === 'zh-CN'
+  const CATEGORY_CONFIG = isZh ? CATEGORY_CONFIG_ZH : CATEGORY_CONFIG_EN
+  const getConfig = (tag: string) => CATEGORY_CONFIG[tag] || { label: tag, color: '#6b7280' }
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -70,7 +109,11 @@ export function TagDistributionChart({ data, isLoading }: TagDistributionChartPr
   }
 
   if (!data || data.length === 0) {
-    return <div className="text-center py-8 text-neutral-500 dark:text-neutral-400">暂无数据</div>
+    return (
+      <div className="text-center py-8 text-neutral-500 dark:text-neutral-400">
+        {isZh ? '暂无数据' : 'No data yet'}
+      </div>
+    )
   }
 
   const maxCount = Math.max(...data.map((d) => d.count))

@@ -30,8 +30,8 @@ export default function LoginPage() {
     localStorage.setItem('user', JSON.stringify({ id: 'demo-user-123', name: 'Demo User' }))
     document.cookie = `auth-token=demo-user-123; path=/; max-age=${60 * 60 * 24 * 7}`
     const redirectUrl =
-      new URLSearchParams(window.location.search).get('redirect') || '/time-blocks'
-    router.push(redirectUrl as '/time-blocks')
+      new URLSearchParams(window.location.search).get('redirect') || '/daily_question'
+    router.push(redirectUrl as '/daily_question')
   }
 
   // Handle mutation result
@@ -43,8 +43,8 @@ export default function LoginPage() {
       localStorage.setItem('user', JSON.stringify(data.user))
       document.cookie = `auth-token=${data.user.id}; path=/; max-age=${60 * 60 * 24 * 7}`
       const redirectUrl =
-        new URLSearchParams(window.location.search).get('redirect') || '/time-blocks'
-      router.push(redirectUrl as '/time-blocks')
+        new URLSearchParams(window.location.search).get('redirect') || '/daily_question'
+      router.push(redirectUrl as '/daily_question')
     }
     if (loginMutation.error) {
       const error = loginMutation.error as { data?: { code?: string }; message?: string }
@@ -75,10 +75,10 @@ export default function LoginPage() {
   }
 
   const features = [
-    { icon: '⏰', label: '时间块记录' },
-    { icon: '💭', label: '每日问答' },
-    { icon: '🔄', label: '实时同步' },
-    { icon: '📱', label: '多端支持' },
+    { icon: '💭', label: t('features.dailyQuestion') },
+    { icon: '🤖', label: t('features.aiGenerated') },
+    { icon: '📊', label: t('features.growthTracking') },
+    { icon: '🔄', label: t('features.cloudSync') },
   ]
 
   return (

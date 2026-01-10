@@ -12,6 +12,7 @@ import { ArrowLeftOutlined, CalendarOutlined, RiseOutlined, StarOutlined } from 
 import { Button, Card, Empty, Segmented, Spin, Typography } from 'antd'
 import dayjs from 'dayjs'
 import { motion } from 'framer-motion'
+import { useLocale } from 'next-intl'
 import { useEffect, useState } from 'react'
 
 const { Text, Paragraph } = Typography
@@ -37,9 +38,30 @@ interface AnswerItem {
 
 export default function ReviewPage() {
   const router = useRouter()
+  const locale = useLocale()
+  const isZh = locale === 'zh-CN'
   const { userId, isAuthenticated, isLoading: authLoading } = useAuth()
   const [period, setPeriod] = useState<'week' | 'month'>('week')
   const [activityYear, setActivityYear] = useState(dayjs().year())
+
+  // i18n texts
+  const t = {
+    back: isZh ? '返回' : 'Back',
+    title: isZh ? '回顾与成长' : 'Review & Growth',
+    week: isZh ? '本周' : 'Week',
+    month: isZh ? '本月' : 'Month',
+    redirecting: isZh ? '正在跳转登录...' : 'Redirecting to login...',
+    topicDistribution: isZh ? '话题分布' : 'Topic Distribution',
+    highRatedQuestions: isZh ? '高分问题回顾' : 'Top Rated Questions',
+    ratingLabel: '(4-5★)',
+    noHighRated: isZh
+      ? '暂无高分问题，继续回答并评分吧'
+      : 'No highly rated questions yet. Keep answering!',
+    growthTrack: isZh ? '成长轨迹' : 'Growth Track',
+    growthSubtitle: isZh ? '同类问题的思考演变' : 'How your thinking evolved',
+    periodAnswers: (p: string) => (isZh ? `${p}回答` : `${p} Answers`),
+    noAnswers: (p: string) => (isZh ? `${p}还没有回答` : `No answers ${p.toLowerCase()} yet`),
+  }
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -88,11 +110,13 @@ export default function ReviewPage() {
     return (
       <PageTransition>
         <div className="flex min-h-screen items-center justify-center">
-          <Spin size="large" tip="正在跳转登录..." />
+          <Spin size="large" tip={t.redirecting} />
         </div>
       </PageTransition>
     )
   }
+
+  const periodText = period === 'week' ? t.week : t.month
 
   const stats = reviewStatsQuery.data
   const streakStats = streakStatsQuery.data
@@ -138,17 +162,17 @@ export default function ReviewPage() {
                     icon={<ArrowLeftOutlined />}
                     className="!text-gray-600 dark:!text-gray-400"
                   >
-                    返回
+                    {t.back}
                   </Button>
                 </Link>
-                <span className="text-lg md:text-xl font-semibold">回顾与成长</span>
+                <span className="text-lg md:text-xl font-semibold">{t.title}</span>
               </div>
               <Segmented
                 value={period}
                 onChange={(v) => setPeriod(v as 'week' | 'month')}
                 options={[
-                  { label: '本周', value: 'week' },
-                  { label: '本月', value: 'month' },
+                  { label: t.week, value: 'week' },
+                  { label: t.month, value: 'month' },
                 ]}
               />
             </div>
@@ -185,7 +209,7 @@ export default function ReviewPage() {
               title={
                 <div className="flex items-center gap-2">
                   <CalendarOutlined className="text-primary-500" />
-                  <span>话题分布</span>
+                  <span>{t.topicDistribution}</span>
                 </div>
               }
               className="glass !rounded-xl md:!rounded-2xl"
@@ -203,9 +227,9 @@ export default function ReviewPage() {
               title={
                 <div className="flex items-center gap-2">
                   <StarOutlined className="text-orange-500" />
-                  <span>高分问题回顾</span>
+                  <span>{t.highRatedQuestions}</span>
                   <Text type="secondary" className="text-sm font-normal">
-                    (4-5星)
+                    {t.ratingLabel}
                   </Text>
                 </div>
               }
@@ -223,7 +247,7 @@ export default function ReviewPage() {
                   ))}
                 </div>
               ) : !stats?.highRatedQuestions || stats.highRatedQuestions.length === 0 ? (
-                <Empty description="暂无高分问题，继续回答并评分吧" />
+                <Empty description={t.noHighRated} />
               ) : (
                 <div className="space-y-4">
                   {(stats.highRatedQuestions as HighRatedQuestion[]).map((item, index) => (
@@ -266,9 +290,9 @@ export default function ReviewPage() {
               title={
                 <div className="flex items-center gap-2">
                   <RiseOutlined className="text-green-500" />
-                  <span>成长轨迹</span>
+                  <span>{t.growthTrack}</span>
                   <Text type="secondary" className="text-sm font-normal">
-                    同类问题的思考演变
+                    {t.growthSubtitle}
                   </Text>
                 </div>
               }
@@ -287,7 +311,7 @@ export default function ReviewPage() {
               title={
                 <div className="flex items-center gap-2">
                   <CalendarOutlined className="text-blue-500" />
-                  <span>{period === 'week' ? '本周' : '本月'}回答</span>
+                  <span>{t.periodAnswers(periodText)}</span>
                 </div>
               }
               className="glass !rounded-xl md:!rounded-2xl"
@@ -303,7 +327,7 @@ export default function ReviewPage() {
                   ))}
                 </div>
               ) : !stats?.answers || stats.answers.length === 0 ? (
-                <Empty description={`${period === 'week' ? '本周' : '本月'}还没有回答`} />
+                <Empty description={t.noAnswers(periodText)} />
               ) : (
                 <div className="space-y-3">
                   {(stats.answers as AnswerItem[]).map((item, index) => (

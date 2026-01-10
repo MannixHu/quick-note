@@ -4,6 +4,7 @@ import { CalendarOutlined, SwapOutlined } from '@ant-design/icons'
 import { Collapse, Empty, Typography } from 'antd'
 import dayjs from 'dayjs'
 import { motion } from 'framer-motion'
+import { useLocale } from 'next-intl'
 
 const { Text, Paragraph } = Typography
 
@@ -27,7 +28,7 @@ interface GrowthComparisonProps {
 }
 
 // Category label mapping
-const CATEGORY_LABELS: Record<string, string> = {
+const CATEGORY_LABELS_ZH: Record<string, string> = {
   reflection: '反思',
   planning: '规划',
   gratitude: '感恩',
@@ -63,24 +64,98 @@ const CATEGORY_LABELS: Record<string, string> = {
   unknown: '其他',
 }
 
-const AnswerCard = ({ answer, label }: { answer: Answer; label: string }) => (
+const CATEGORY_LABELS_EN: Record<string, string> = {
+  reflection: 'Reflection',
+  planning: 'Planning',
+  gratitude: 'Gratitude',
+  growth: 'Growth',
+  relationships: 'Relationships',
+  values: 'Values',
+  logic: 'Logic',
+  philosophy: 'Philosophy',
+  science: 'Science',
+  abstract: 'Abstract',
+  systems: 'Systems',
+  creativity: 'Creativity',
+  knowledge: 'Knowledge',
+  self: 'Self',
+  future: 'Future',
+  thought_experiment: 'Thought Exp.',
+  decision: 'Decision',
+  curiosity: 'Curiosity',
+  psychology: 'Psychology',
+  mathematics: 'Mathematics',
+  ethics: 'Ethics',
+  language: 'Language',
+  consciousness: 'Consciousness',
+  history: 'History',
+  paradox: 'Paradox',
+  metacognition: 'Metacognition',
+  problem_solving: 'Problem Solving',
+  information: 'Information',
+  complexity: 'Complexity',
+  analogy: 'Analogy',
+  existence: 'Existence',
+  innovation: 'Innovation',
+  unknown: 'Other',
+}
+
+interface AnswerCardProps {
+  answer: Answer
+  label: string
+  unknownDateText: string
+  unknownQuestionText: string
+  noAnswerText: string
+  expandText: string
+}
+
+const AnswerCard = ({
+  answer,
+  label,
+  unknownDateText,
+  unknownQuestionText,
+  noAnswerText,
+  expandText,
+}: AnswerCardProps) => (
   <div className="flex-1 p-3 bg-neutral-50 dark:bg-neutral-800/50 rounded-lg">
     <div className="flex items-center gap-2 mb-2">
       <CalendarOutlined className="text-neutral-400 text-xs" />
       <Text type="secondary" className="text-xs">
-        {label} · {answer.date ? dayjs(answer.date).format('YYYY-MM-DD') : '未知'}
+        {label} · {answer.date ? dayjs(answer.date).format('YYYY-MM-DD') : unknownDateText}
       </Text>
     </div>
     <Text className="text-sm text-neutral-600 dark:text-neutral-400 block mb-2 line-clamp-2">
-      Q: {answer.question || '未知问题'}
+      Q: {answer.question || unknownQuestionText}
     </Text>
-    <Paragraph className="!mb-0 text-sm" ellipsis={{ rows: 3, expandable: true, symbol: '展开' }}>
-      {answer.answer || '无回答'}
+    <Paragraph
+      className="!mb-0 text-sm"
+      ellipsis={{ rows: 3, expandable: true, symbol: expandText }}
+    >
+      {answer.answer || noAnswerText}
     </Paragraph>
   </div>
 )
 
 export function GrowthComparison({ comparisons, isLoading }: GrowthComparisonProps) {
+  const locale = useLocale()
+  const isZh = locale === 'zh-CN'
+  const CATEGORY_LABELS = isZh ? CATEGORY_LABELS_ZH : CATEGORY_LABELS_EN
+
+  // i18n texts
+  const texts = {
+    unknownDate: isZh ? '未知' : 'Unknown',
+    unknownQuestion: isZh ? '未知问题' : 'Unknown question',
+    noAnswer: isZh ? '无回答' : 'No answer',
+    expand: isZh ? '展开' : 'More',
+    firstAnswer: isZh ? '最早回答' : 'First answer',
+    latestAnswer: isZh ? '最近回答' : 'Latest answer',
+    answersCount: (count: number) =>
+      isZh ? `${count} 次回答` : `${count} answer${count !== 1 ? 's' : ''}`,
+    allAnswers: (count: number) => (isZh ? `全部 ${count} 次回答` : `All ${count} answers`),
+    emptyDescription: isZh
+      ? '需要在同一类别有多次回答才能进行对比'
+      : 'Need multiple answers in the same category to compare',
+  }
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -99,7 +174,7 @@ export function GrowthComparison({ comparisons, isLoading }: GrowthComparisonPro
   }
 
   if (!comparisons || comparisons.length === 0) {
-    return <Empty description="需要在同一类别有多次回答才能进行对比" />
+    return <Empty description={texts.emptyDescription} />
   }
 
   const items = comparisons.map((comparison) => ({
@@ -110,7 +185,7 @@ export function GrowthComparison({ comparisons, isLoading }: GrowthComparisonPro
           {CATEGORY_LABELS[comparison.category] || comparison.category}
         </span>
         <span className="text-xs text-neutral-500 dark:text-neutral-400">
-          {comparison.totalAnswers} 次回答
+          {texts.answersCount(comparison.totalAnswers)}
         </span>
       </div>
     ),
@@ -118,20 +193,34 @@ export function GrowthComparison({ comparisons, isLoading }: GrowthComparisonPro
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
         {/* First vs Latest Comparison */}
         <div className="flex flex-col md:flex-row gap-4 items-stretch">
-          <AnswerCard answer={comparison.firstAnswer} label="最早回答" />
+          <AnswerCard
+            answer={comparison.firstAnswer}
+            label={texts.firstAnswer}
+            unknownDateText={texts.unknownDate}
+            unknownQuestionText={texts.unknownQuestion}
+            noAnswerText={texts.noAnswer}
+            expandText={texts.expand}
+          />
           <div className="hidden md:flex items-center justify-center">
             <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
               <SwapOutlined className="text-primary-500" />
             </div>
           </div>
-          <AnswerCard answer={comparison.latestAnswer} label="最近回答" />
+          <AnswerCard
+            answer={comparison.latestAnswer}
+            label={texts.latestAnswer}
+            unknownDateText={texts.unknownDate}
+            unknownQuestionText={texts.unknownQuestion}
+            noAnswerText={texts.noAnswer}
+            expandText={texts.expand}
+          />
         </div>
 
         {/* Timeline of all answers (if more than 2) */}
         {comparison.allAnswers.length > 2 && (
           <div className="mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-700">
             <Text type="secondary" className="text-xs mb-2 block">
-              全部 {comparison.allAnswers.length} 次回答
+              {texts.allAnswers(comparison.allAnswers.length)}
             </Text>
             <div className="space-y-2 max-h-40 overflow-y-auto">
               {comparison.allAnswers.map((ans, i) => (
