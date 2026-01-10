@@ -1052,4 +1052,268 @@ export const dailyQuestionRouter = createTRPCRouter({
         }
       }
     }),
+
+  // ============================================
+  // Question Rating System
+  // ============================================
+
+  /**
+   * Rate a question (1-5 stars)
+   * Creates or updates the user's rating for a question
+   */
+  rateQuestion: publicProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        questionId: z.string(),
+        rating: z.number().min(1).max(5),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const result = await ctx.prisma.questionRating.upsert({
+        where: {
+          userId_questionId: {
+            userId: input.userId,
+            questionId: input.questionId,
+          },
+        },
+        create: {
+          userId: input.userId,
+          questionId: input.questionId,
+          rating: input.rating,
+        },
+        update: {
+          rating: input.rating,
+        },
+        include: {
+          question: true,
+        },
+      })
+      return result
+    }),
+
+  /**
+   * Get user's rating for a specific question
+   */
+  getQuestionRating: publicProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        questionId: z.string(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const rating = await ctx.prisma.questionRating.findUnique({
+        where: {
+          userId_questionId: {
+            userId: input.userId,
+            questionId: input.questionId,
+          },
+        },
+      })
+      return rating
+    }),
+
+  /**
+   * Get user's rating history
+   */
+  getUserRatings: publicProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        limit: z.number().min(1).max(100).default(50),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const ratings = await ctx.prisma.questionRating.findMany({
+        where: { userId: input.userId },
+        include: {
+          question: true,
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: input.limit,
+      })
+      return ratings
+    }),
+
+  /**
+   * Get user's preference stats (tag distribution from high-rated questions)
+   */
+  getUserPreferenceStats: publicProcedure
+    .input(z.object({ userId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      // Get questions rated 4 or 5 stars
+      const highRatedQuestions = await ctx.prisma.questionRating.findMany({
+        where: {
+          userId: input.userId,
+          rating: { gte: 4 },
+        },
+        include: {
+          question: true,
+        },
+      })
+
+      // Count tags
+      const tagCounts: Record<string, number> = {}
+      for (const rating of highRatedQuestions) {
+        const tag = rating.question.tag || 'unknown'
+        tagCounts[tag] = (tagCounts[tag] || 0) + 1
+      }
+
+      // Calculate percentages
+      const total = highRatedQuestions.length
+      const tagStats = Object.entries(tagCounts).map(([tag, count]) => ({
+        tag,
+        count,
+        percentage: total > 0 ? Math.round((count / total) * 100) : 0,
+      }))
+
+      // Sort by count descending
+      tagStats.sort((a, b) => b.count - a.count)
+
+      return {
+        totalRated: total,
+        tagStats,
+      }
+    }),
+
+  /**
+   * Update a question's tag (admin function)
+   */
+  updateQuestionTag: publicProcedure
+    .input(
+      z.object({
+        questionId: z.string(),
+        tag: z.string(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const result = await ctx.prisma.dailyQuestion.update({
+        where: { id: input.questionId },
+        data: { tag: input.tag },
+      })
+      return result
+    }),
+
+  /**
+   * Batch update question tags
+   */
+  batchUpdateQuestionTags: publicProcedure
+    .input(
+      z.object({
+        updates: z.array(
+          z.object({
+            questionId: z.string(),
+            tag: z.string(),
+          })
+        ),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const results = await Promise.all(
+        input.updates.map((update) =>
+          ctx.prisma.dailyQuestion.update({
+            where: { id: update.questionId },
+            data: { tag: update.tag },
+          })
+        )
+      )
+      return { updated: results.length }
+    }),
+
+  /**
+   * Get recommended question based on user preferences
+   * 60% preference-based, 40% random (anti-filter-bubble)
+   */
+  getRecommendedQuestion: publicProcedure
+    .input(z.object({ userId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      // Get recently answered question IDs to avoid repetition
+      const recentAnswers = await ctx.prisma.questionAnswer.findMany({
+        where: { userId: input.userId },
+        orderBy: { createdAt: 'desc' },
+        take: 15,
+        select: { questionId: true },
+      })
+      const excludeIds = recentAnswers.map((a) => a.questionId)
+
+      // Get user's high-rated question tags
+      const highRatedQuestions = await ctx.prisma.questionRating.findMany({
+        where: {
+          userId: input.userId,
+          rating: { gte: 4 },
+        },
+        include: {
+          question: { select: { tag: true } },
+        },
+      })
+
+      // Calculate tag weights
+      const tagWeights: Record<string, number> = {}
+      for (const rating of highRatedQuestions) {
+        const tag = rating.question.tag
+        if (tag) {
+          tagWeights[tag] = (tagWeights[tag] || 0) + rating.rating
+        }
+      }
+
+      const preferredTags = Object.keys(tagWeights)
+
+      // Decide: 60% preference, 40% random
+      const usePreference = Math.random() < 0.6 && preferredTags.length > 0
+
+      let question = null
+
+      if (usePreference) {
+        // Weighted random tag selection
+        const totalWeight = Object.values(tagWeights).reduce((a, b) => a + b, 0)
+        let random = Math.random() * totalWeight
+        let selectedTag = preferredTags[0]
+
+        for (const tag of preferredTags) {
+          random -= tagWeights[tag] || 0
+          if (random <= 0) {
+            selectedTag = tag
+            break
+          }
+        }
+
+        // Get questions with selected tag
+        const tagQuestions = await ctx.prisma.dailyQuestion.findMany({
+          where: {
+            tag: selectedTag,
+            id: { notIn: excludeIds.length > 0 ? excludeIds : undefined },
+          },
+        })
+
+        if (tagQuestions.length > 0) {
+          const randomIndex = Math.floor(Math.random() * tagQuestions.length)
+          question = tagQuestions[randomIndex]
+        }
+      }
+
+      // Fallback to random question (or 40% random path)
+      if (!question) {
+        const availableQuestions = await ctx.prisma.dailyQuestion.findMany({
+          where: {
+            id: { notIn: excludeIds.length > 0 ? excludeIds : undefined },
+          },
+        })
+
+        const questions =
+          availableQuestions.length > 0
+            ? availableQuestions
+            : await ctx.prisma.dailyQuestion.findMany()
+
+        if (questions.length > 0) {
+          const randomIndex = Math.floor(Math.random() * questions.length)
+          question = questions[randomIndex]
+        }
+      }
+
+      return {
+        question,
+        source: usePreference && question ? 'preference' : 'random',
+      }
+    }),
 })

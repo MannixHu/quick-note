@@ -24,6 +24,7 @@ model User {
   timeBlocks          TimeBlock[]
   questionAnswers     QuestionAnswer[]
   dailyQuestions      UserDailyQuestion[]
+  questionRatings     QuestionRating[]
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -124,11 +125,30 @@ model TimeBlock {
 model DailyQuestion {
   id          String   @id @default(cuid())
   question    String   // The question text
-  category    String?  // Question category: reflection, planning, gratitude, etc.
+  category    String?  // Legacy category field
+  tag         String?  // INTP-based tag: thinking, introspection, learning, possibilities, optimization, social, values, action
   answers     QuestionAnswer[]
   userDaily   UserDailyQuestion[]
+  ratings     QuestionRating[]
 
   createdAt   DateTime @default(now())
+}
+
+// User's Question Ratings (1-5 stars)
+model QuestionRating {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionId  String
+  question    DailyQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  rating      Int      // 1-5 stars
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, questionId])
+  @@index([userId])
+  @@index([questionId])
 }
 
 // User's Daily Question Answers

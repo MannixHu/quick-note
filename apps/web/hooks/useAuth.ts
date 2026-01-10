@@ -1,10 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
-import { useLocalStorage } from './useLocalStorage'
-
-// Demo user ID - in production this would come from auth context
-const DEMO_USER_ID = 'demo-user-123'
+import { useCallback, useEffect, useState } from 'react'
 
 export interface User {
   id: string
@@ -20,93 +16,64 @@ export interface AuthState {
 }
 
 export interface UseAuthReturn extends AuthState {
-  login: (email: string, password: string) => Promise<boolean>
   logout: () => void
-  register: (email: string, password: string, name?: string) => Promise<boolean>
-  userId: string // Always returns a user ID (demo or real)
+  userId: string | null // Returns null if not authenticated
 }
 
 /**
  * Hook for managing authentication state
- * Currently uses demo user, will integrate with real auth in production
+ * Reads from localStorage where login page stores user data
  */
 export function useAuth(): UseAuthReturn {
-  const [user, setUser] = useLocalStorage<User | null>('auth-user', null)
-  const [isLoading, setIsLoading] = useState(false)
+  const [user, setUser] = useState<User | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
-  // For now, always return demo user ID
-  // In production, this would return the actual authenticated user ID
-  const userId = user?.id ?? DEMO_USER_ID
-
-  const login = useCallback(
-    async (email: string, _password: string): Promise<boolean> => {
-      setIsLoading(true)
-      try {
-        // TODO: Integrate with tRPC auth.login mutation
-        // For now, simulate login with demo user
-        console.log('Login attempt:', { email, password: '***' })
-
-        // Simulate API call delay
-        await new Promise((resolve) => setTimeout(resolve, 500))
-
-        // Demo: Always succeed and set demo user
-        setUser({
-          id: DEMO_USER_ID,
-          email,
-          name: email.split('@')[0],
-        })
-
-        return true
-      } catch (error) {
-        console.error('Login error:', error)
-        return false
-      } finally {
-        setIsLoading(false)
+  // Read user from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('user')
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        setUser(parsed)
       }
-    },
-    [setUser]
-  )
+    } catch (error) {
+      console.error('Error reading user from localStorage:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  // Listen for storage changes (e.g., login in another tab)
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'user') {
+        if (e.newValue) {
+          try {
+            setUser(JSON.parse(e.newValue))
+          } catch {
+            setUser(null)
+          }
+        } else {
+          setUser(null)
+        }
+      }
+    }
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
+  }, [])
 
   const logout = useCallback(() => {
+    localStorage.removeItem('user')
+    document.cookie = 'auth-token=; path=/; max-age=0'
     setUser(null)
-  }, [setUser])
-
-  const register = useCallback(
-    async (email: string, _password: string, name?: string): Promise<boolean> => {
-      setIsLoading(true)
-      try {
-        // TODO: Integrate with tRPC auth.register mutation
-        console.log('Register attempt:', { email, password: '***', name })
-
-        // Simulate API call delay
-        await new Promise((resolve) => setTimeout(resolve, 500))
-
-        // Demo: Always succeed and set demo user
-        setUser({
-          id: DEMO_USER_ID,
-          email,
-          name: name ?? email.split('@')[0],
-        })
-
-        return true
-      } catch (error) {
-        console.error('Register error:', error)
-        return false
-      } finally {
-        setIsLoading(false)
-      }
-    },
-    [setUser]
-  )
+  }, [])
 
   return {
     user,
     isAuthenticated: user !== null,
     isLoading,
-    login,
     logout,
-    register,
-    userId,
+    userId: user?.id ?? null,
   }
 }
 

@@ -1,9 +1,11 @@
 'use client'
 
 import { LanguageSwitcher } from '@/components/language-switcher'
+import { StarRating } from '@/components/star-rating'
 import { ThemeSwitcher } from '@/components/theme-switcher'
 import { Button, FadeIn, PageTransition, SlideUp } from '@/components/ui'
-import { Link } from '@/lib/i18n/routing'
+import { useAuth } from '@/hooks'
+import { Link, useRouter } from '@/lib/i18n/routing'
 import { trpc } from '@/lib/trpc/client'
 import {
   ApiOutlined,
@@ -39,8 +41,6 @@ dayjs.extend(dayOfYear)
 const { Text, Paragraph } = Typography
 const { TextArea } = Input
 
-const DEMO_USER_ID = 'demo-user-123'
-
 const SAMPLE_QUESTIONS = [
   '今天最让你感到有成就感的事情是什么？',
   '如果今天可以重来，你会做什么不同的选择？',
@@ -66,6 +66,15 @@ export default function DailyQuestionPage() {
   const { message } = App.useApp()
   const t = useTranslations('dailyQuestion')
   const tCommon = useTranslations('common')
+  const router = useRouter()
+  const { userId, isAuthenticated, isLoading: authLoading } = useAuth()
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.replace('/login?redirect=/daily-question')
+    }
+  }, [authLoading, isAuthenticated, router])
 
   const todayIndex = dayjs().dayOfYear() % SAMPLE_QUESTIONS.length
   const fallbackQuestion =
@@ -74,6 +83,9 @@ export default function DailyQuestionPage() {
   const [answer, setAnswer] = useState('')
   const [todayQuestion, setTodayQuestion] = useState<string>(fallbackQuestion)
   const [questionId, setQuestionId] = useState<string | null>(null)
+  const [questionTag, setQuestionTag] = useState<string | null>(null)
+  const [questionSource, setQuestionSource] = useState<'preference' | 'random'>('random')
+  const [currentRating, setCurrentRating] = useState<number>(0)
   const [history, setHistory] = useState<AnswerHistory[]>([])
   const [isApiAvailable, setIsApiAvailable] = useState(true)
   const [editingHistoryId, setEditingHistoryId] = useState<string | null>(null)
@@ -103,22 +115,31 @@ export default function DailyQuestionPage() {
     }
   }, [settingsForm])
 
-  // tRPC queries
+  // tRPC queries - only run when authenticated
   // @ts-expect-error - tRPC v11 RC type compatibility
-  const randomQuestionQuery = trpc.dailyQuestion.getRandomQuestion.useQuery(
-    { userId: DEMO_USER_ID },
-    { retry: 2 }
+  const recommendedQuestionQuery = trpc.dailyQuestion.getRecommendedQuestion.useQuery(
+    { userId: userId ?? '' },
+    { retry: 2, enabled: !!userId }
   )
 
   // @ts-expect-error - tRPC v11 RC type compatibility
   const historyQuery = trpc.dailyQuestion.getAnswerHistory.useQuery(
-    { userId: DEMO_USER_ID, limit: 30 },
-    { retry: 2 }
+    { userId: userId ?? '', limit: 30 },
+    { retry: 2, enabled: !!userId }
+  )
+
+  // @ts-expect-error - tRPC v11 RC type compatibility
+  const questionRatingQuery = trpc.dailyQuestion.getQuestionRating.useQuery(
+    { userId: userId ?? '', questionId: questionId ?? '' },
+    { enabled: !!userId && !!questionId }
   )
 
   // tRPC mutations
   // @ts-expect-error - tRPC v11 RC type compatibility
   const answerMutation = trpc.dailyQuestion.answerQuestionNew.useMutation()
+
+  // @ts-expect-error - tRPC v11 RC type compatibility
+  const rateMutation = trpc.dailyQuestion.rateQuestion.useMutation()
 
   // @ts-expect-error - tRPC v11 RC type compatibility
   const generateAIMutation = trpc.dailyQuestion.generateAIQuestions.useMutation()
@@ -168,20 +189,37 @@ export default function DailyQuestionPage() {
 
   // Sync API data to local state
   useEffect(() => {
-    if (randomQuestionQuery.data) {
-      const data = randomQuestionQuery.data as {
-        id: string
-        question: string
-        category: string | null
+    if (recommendedQuestionQuery.data) {
+      const data = recommendedQuestionQuery.data as {
+        question: {
+          id: string
+          question: string
+          category: string | null
+          tag: string | null
+        } | null
+        source: 'preference' | 'random'
       }
-      setTodayQuestion(data.question)
-      setQuestionId(data.id)
-      setIsApiAvailable(true)
+      if (data.question) {
+        setTodayQuestion(data.question.question)
+        setQuestionId(data.question.id)
+        setQuestionTag(data.question.tag)
+        setQuestionSource(data.source)
+        setCurrentRating(0) // Reset rating for new question
+        setIsApiAvailable(true)
+      }
     }
-    if (randomQuestionQuery.error) {
+    if (recommendedQuestionQuery.error) {
       setIsApiAvailable(false)
     }
-  }, [randomQuestionQuery.data, randomQuestionQuery.error])
+  }, [recommendedQuestionQuery.data, recommendedQuestionQuery.error])
+
+  // Sync existing rating
+  useEffect(() => {
+    if (questionRatingQuery.data) {
+      const data = questionRatingQuery.data as { rating: number } | null
+      setCurrentRating(data?.rating ?? 0)
+    }
+  }, [questionRatingQuery.data])
 
   useEffect(() => {
     if (historyQuery.data) {
@@ -232,14 +270,14 @@ export default function DailyQuestionPage() {
       return
     }
 
-    if (!questionId) {
+    if (!questionId || !userId) {
       // Fallback to local submit
       handleLocalSubmit()
       return
     }
 
     answerMutation.mutate({
-      userId: DEMO_USER_ID,
+      userId,
       questionId,
       answer: answer.trim(),
     })
@@ -249,7 +287,25 @@ export default function DailyQuestionPage() {
     // Only fetch from API, let the useEffect handle the update
     // If API fails, the error handler will keep the current question
     setQuestionId(null)
-    randomQuestionQuery.refetch()
+    setCurrentRating(0)
+    recommendedQuestionQuery.refetch()
+  }
+
+  const handleRatingChange = (rating: number) => {
+    if (!userId || !questionId) return
+    setCurrentRating(rating)
+    rateMutation.mutate(
+      { userId, questionId, rating },
+      {
+        onSuccess: () => {
+          message.success('评分已保存')
+        },
+        onError: () => {
+          message.error('评分保存失败')
+          setCurrentRating(0)
+        },
+      }
+    )
   }
 
   const handleSaveSettings = (values: AIConfig) => {
@@ -315,6 +371,17 @@ export default function DailyQuestionPage() {
   const handleCancelHistoryEdit = () => {
     setEditingHistoryId(null)
     setEditingHistoryAnswer('')
+  }
+
+  // Show loading while checking auth
+  if (authLoading || !isAuthenticated) {
+    return (
+      <PageTransition>
+        <div className="flex min-h-screen items-center justify-center">
+          <Spin size="large" />
+        </div>
+      </PageTransition>
+    )
   }
 
   return (
@@ -396,25 +463,35 @@ export default function DailyQuestionPage() {
               transition={{ duration: 0.2 }}
             >
               <Card
-                loading={randomQuestionQuery.isLoading}
+                loading={recommendedQuestionQuery.isLoading}
                 className="glass !rounded-xl md:!rounded-2xl"
                 title={
                   <div className="flex items-center gap-2 flex-wrap">
                     <QuestionCircleOutlined className="text-purple-500" />
                     <span>{t('todayQuestion')}</span>
+                    {questionSource === 'preference' && (
+                      <Tag color="purple" className="!text-xs">
+                        为你推荐
+                      </Tag>
+                    )}
+                    {questionTag && (
+                      <Tag color="blue" className="!text-xs">
+                        {questionTag}
+                      </Tag>
+                    )}
                     <Text type="secondary" className="ml-auto text-sm font-normal">
                       {dayjs().format('YYYY-MM-DD')}
                     </Text>
                   </div>
                 }
               >
-                {randomQuestionQuery.error ? (
+                {recommendedQuestionQuery.error ? (
                   <div className="text-center py-4">
                     <Text type="danger">加载问题失败，请检查网络连接</Text>
                     <br />
                     <AntButton
                       type="link"
-                      onClick={() => randomQuestionQuery.refetch()}
+                      onClick={() => recommendedQuestionQuery.refetch()}
                       className="mt-2"
                     >
                       重试
@@ -460,6 +537,18 @@ export default function DailyQuestionPage() {
                         >
                           换一个问题
                         </Button>
+                      </div>
+
+                      {/* Rating Section */}
+                      <div className="mt-6 pt-4 border-t border-gray-200/50 dark:border-gray-700/50">
+                        <Text className="block mb-3 text-center text-gray-500">
+                          这个问题对你有帮助吗？
+                        </Text>
+                        <StarRating
+                          value={currentRating}
+                          onChange={handleRatingChange}
+                          disabled={rateMutation.isPending}
+                        />
                       </div>
                     </div>
                   </>

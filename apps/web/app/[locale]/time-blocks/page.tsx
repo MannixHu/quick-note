@@ -3,17 +3,15 @@
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { ThemeSwitcher } from '@/components/theme-switcher'
 import { Button, FadeIn, PageTransition, SlideUp } from '@/components/ui'
-import { Link } from '@/lib/i18n/routing'
+import { useAuth } from '@/hooks'
+import { Link, useRouter } from '@/lib/i18n/routing'
 import { trpc } from '@/lib/trpc/client'
 import { ArrowLeftOutlined, CheckOutlined, CopyOutlined, PlusOutlined } from '@ant-design/icons'
-import { Button as AntButton, App, DatePicker, Input, Popover, Tag } from 'antd'
+import { Button as AntButton, App, DatePicker, Input, Popover, Spin, Tag } from 'antd'
 import dayjs from 'dayjs'
 import { motion } from 'framer-motion'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useState } from 'react'
-
-// Demo user ID - in production this would come from auth context
-const DEMO_USER_ID = 'demo-user-123'
 
 // Generate hours array (0-23)
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
@@ -46,6 +44,15 @@ export default function TimeBlocksPage() {
   const { message } = App.useApp()
   const t = useTranslations('timeBlock')
   const tCommon = useTranslations('common')
+  const router = useRouter()
+  const { userId, isAuthenticated, isLoading: authLoading } = useAuth()
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.replace('/login?redirect=/time-blocks')
+    }
+  }, [authLoading, isAuthenticated, router])
 
   const [selectedDate, setSelectedDate] = useState(dayjs())
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
@@ -59,18 +66,18 @@ export default function TimeBlocksPage() {
   // tRPC queries with fallback
   // @ts-expect-error - tRPC v11 RC type compatibility
   const categoriesQuery = trpc.timeBlock.getCategories.useQuery(
-    { userId: DEMO_USER_ID },
+    { userId: userId ?? '' },
     {
-      enabled: isApiAvailable,
+      enabled: isApiAvailable && !!userId,
       retry: 1,
     }
   )
 
   // @ts-expect-error - tRPC v11 RC type compatibility
   const blocksQuery = trpc.timeBlock.getByDate.useQuery(
-    { userId: DEMO_USER_ID, date: selectedDate.format('YYYY-MM-DD') },
+    { userId: userId ?? '', date: selectedDate.format('YYYY-MM-DD') },
     {
-      enabled: isApiAvailable,
+      enabled: isApiAvailable && !!userId,
       retry: 1,
     }
   )
@@ -222,9 +229,9 @@ export default function TimeBlocksPage() {
         }
       } else {
         // Add new block
-        if (isApiAvailable) {
+        if (isApiAvailable && userId) {
           quickCreateMutation.mutate({
-            userId: DEMO_USER_ID,
+            userId,
             categoryId: selectedCategory.id,
             date: selectedDate.format('YYYY-MM-DD'),
             hour,
@@ -274,9 +281,9 @@ export default function TimeBlocksPage() {
   const handleAddCategory = () => {
     if (!newCategory.name || !newCategory.label) return
 
-    if (isApiAvailable) {
+    if (isApiAvailable && userId) {
       createCategoryMutation.mutate({
-        userId: DEMO_USER_ID,
+        userId,
         ...newCategory,
       })
     } else {
@@ -298,6 +305,17 @@ export default function TimeBlocksPage() {
     ...cat,
     hours: blocks.filter((b) => b.category.id === cat.id).length,
   }))
+
+  // Show loading while checking auth
+  if (authLoading || !isAuthenticated) {
+    return (
+      <PageTransition>
+        <div className="flex min-h-screen items-center justify-center">
+          <Spin size="large" />
+        </div>
+      </PageTransition>
+    )
+  }
 
   return (
     <PageTransition>
