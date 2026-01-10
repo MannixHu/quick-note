@@ -15,6 +15,13 @@ export default defineConfig({
       'packages/**/*.test.{ts,tsx}',
     ],
     exclude: ['tests/e2e/**', 'node_modules/**'],
+    deps: {
+      optimizer: {
+        web: {
+          include: ['react', 'react-dom', 'antd', 'framer-motion'],
+        },
+      },
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
