@@ -1809,4 +1809,57 @@ export const dailyQuestionRouter = createTRPCRouter({
 
       return { comparisons }
     }),
+
+  /**
+   * Get activity data for heatmap (GitHub-style contribution graph)
+   * Returns dates and answer counts for the past year
+   */
+  getActivityData: publicProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        year: z.number().optional(), // defaults to current year
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const year = input.year || new Date().getFullYear()
+      const startDate = new Date(year, 0, 1) // Jan 1
+      const endDate = new Date(year, 11, 31, 23, 59, 59, 999) // Dec 31
+
+      // Get all answers in the year
+      const answers = await ctx.prisma.questionAnswer.findMany({
+        where: {
+          userId: input.userId,
+          date: {
+            gte: startDate,
+            lte: endDate,
+          },
+        },
+        select: { date: true },
+        orderBy: { date: 'asc' },
+      })
+
+      // Count answers per day
+      const countByDate: Record<string, number> = {}
+      for (const answer of answers) {
+        const dateStr = answer.date.toISOString().split('T')[0]
+        if (dateStr) {
+          countByDate[dateStr] = (countByDate[dateStr] || 0) + 1
+        }
+      }
+
+      // Convert to activity array format for react-activity-calendar
+      const activities = Object.entries(countByDate).map(([date, count]) => ({
+        date,
+        count,
+        level: Math.min(count, 4) as 0 | 1 | 2 | 3 | 4, // level 0-4
+      }))
+
+      return {
+        year,
+        totalActivities: answers.length,
+        activeDays: Object.keys(countByDate).length,
+        activities,
+      }
+    }),
 })

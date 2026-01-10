@@ -174,6 +174,12 @@ export default function DailyQuestionPage() {
   )
 
   // @ts-expect-error - tRPC v11 RC type compatibility
+  const activityQuery = trpc.dailyQuestion.getActivityData.useQuery(
+    { userId: userId ?? '' },
+    { retry: 2, enabled: !!userId }
+  )
+
+  // @ts-expect-error - tRPC v11 RC type compatibility
   const userRatingsQuery = trpc.dailyQuestion.getUserRatings.useQuery(
     { userId: userId ?? '', limit: 100 },
     { retry: 2, enabled: !!userId }
@@ -580,7 +586,8 @@ export default function DailyQuestionPage() {
             currentStreak={dashboardQuery.data?.currentStreak ?? 0}
             topTags={dashboardQuery.data?.topTags ?? []}
             todayAnswered={dashboardQuery.data?.todayAnswered ?? false}
-            isLoading={dashboardQuery.isLoading}
+            weeklyActivities={activityQuery.data?.activities ?? []}
+            isLoading={dashboardQuery.isLoading || activityQuery.isLoading}
           />
 
           {/* Today's Question */}

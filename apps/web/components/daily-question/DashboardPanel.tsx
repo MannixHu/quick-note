@@ -1,9 +1,16 @@
 'use client'
 
+import { WeeklyActivityDots } from '@/components/activity'
 import { CalendarOutlined, FireOutlined, RightOutlined, TagOutlined } from '@ant-design/icons'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+
+interface Activity {
+  date: string
+  count: number
+  level: 0 | 1 | 2 | 3 | 4
+}
 
 interface DashboardPanelProps {
   weeklyProgress: {
@@ -13,6 +20,7 @@ interface DashboardPanelProps {
   currentStreak: number
   topTags: Array<{ tag: string; count: number }>
   todayAnswered: boolean
+  weeklyActivities?: Activity[]
   isLoading?: boolean
 }
 
@@ -58,6 +66,7 @@ export function DashboardPanel({
   currentStreak,
   topTags,
   todayAnswered,
+  weeklyActivities = [],
   isLoading,
 }: DashboardPanelProps) {
   const params = useParams()
@@ -78,8 +87,6 @@ export function DashboardPanel({
     )
   }
 
-  const progressPercent = Math.round((weeklyProgress.answered / weeklyProgress.total) * 100)
-
   return (
     <motion.div
       initial={{ opacity: 0, y: -10 }}
@@ -90,24 +97,15 @@ export function DashboardPanel({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         {/* Stats Row */}
         <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-          {/* Weekly Progress */}
+          {/* Weekly Activity Dots */}
           <div className="flex items-center gap-2">
             <CalendarOutlined className="text-primary-500 text-lg" />
             <div className="flex items-center gap-2">
               <span className="text-sm text-neutral-600 dark:text-neutral-400">本周</span>
-              <div className="flex items-center gap-1.5">
-                <div className="w-20 h-2 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${progressPercent}%` }}
-                    transition={{ duration: 0.5, delay: 0.2 }}
-                    className="h-full bg-gradient-to-r from-primary-500 to-primary-400 rounded-full"
-                  />
-                </div>
-                <span className="text-sm font-medium text-neutral-800 dark:text-neutral-200">
-                  {weeklyProgress.answered}/{weeklyProgress.total}
-                </span>
-              </div>
+              <WeeklyActivityDots activities={weeklyActivities} isLoading={isLoading} />
+              <span className="text-sm font-medium text-neutral-800 dark:text-neutral-200">
+                {weeklyProgress.answered}/{weeklyProgress.total}
+              </span>
             </div>
           </div>
 

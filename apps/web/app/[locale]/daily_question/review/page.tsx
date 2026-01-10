@@ -1,5 +1,6 @@
 'use client'
 
+import { YearlyHeatmap } from '@/components/activity'
 import { GrowthComparison } from '@/components/review/GrowthComparison'
 import { StatsOverview } from '@/components/review/StatsOverview'
 import { TagDistributionChart } from '@/components/review/TagDistributionChart'
@@ -38,6 +39,7 @@ export default function ReviewPage() {
   const router = useRouter()
   const { userId, isAuthenticated, isLoading: authLoading } = useAuth()
   const [period, setPeriod] = useState<'week' | 'month'>('week')
+  const [activityYear, setActivityYear] = useState(dayjs().year())
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -61,6 +63,12 @@ export default function ReviewPage() {
   // @ts-expect-error - tRPC v11 RC type compatibility
   const growthComparisonQuery = trpc.dailyQuestion.getGrowthComparison.useQuery(
     { userId: userId ?? '', limit: 5 },
+    { retry: 2, enabled: !!userId }
+  )
+
+  // @ts-expect-error - tRPC v11 RC type compatibility
+  const activityQuery = trpc.dailyQuestion.getActivityData.useQuery(
+    { userId: userId ?? '', year: activityYear },
     { retry: 2, enabled: !!userId }
   )
 
@@ -156,6 +164,18 @@ export default function ReviewPage() {
               currentStreak={streakStats?.currentStreak ?? 0}
               avgAnswersPerDay={stats?.avgAnswersPerDay ?? 0}
               isLoading={reviewStatsQuery.isLoading || streakStatsQuery.isLoading}
+            />
+          </SlideUp>
+
+          {/* Yearly Activity Heatmap */}
+          <SlideUp delay={0.25}>
+            <YearlyHeatmap
+              activities={activityQuery.data?.activities ?? []}
+              year={activityYear}
+              totalActivities={activityQuery.data?.totalActivities ?? 0}
+              activeDays={activityQuery.data?.activeDays ?? 0}
+              isLoading={activityQuery.isLoading}
+              onYearChange={setActivityYear}
             />
           </SlideUp>
 
