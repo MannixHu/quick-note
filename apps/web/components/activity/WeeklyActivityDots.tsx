@@ -3,8 +3,11 @@
 import { Tooltip } from 'antd'
 import dayjs from 'dayjs'
 import 'dayjs/locale/zh-cn'
+import isoWeek from 'dayjs/plugin/isoWeek'
 import { motion } from 'framer-motion'
 import { useLocale } from 'next-intl'
+
+dayjs.extend(isoWeek)
 
 interface Activity {
   date: string
@@ -21,12 +24,15 @@ interface WeeklyActivityDotsProps {
 const WEEKDAYS_ZH = ['一', '二', '三', '四', '五', '六', '日']
 const WEEKDAYS_EN = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 
+// Match YearlyHeatmap colors
+// light: ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39']
+// dark: ['#161b22', '#0e4429', '#006d32', '#26a641', '#39d353']
 const LEVEL_COLORS = {
-  0: 'bg-neutral-200 dark:bg-neutral-700',
-  1: 'bg-emerald-300 dark:bg-emerald-800',
-  2: 'bg-emerald-400 dark:bg-emerald-600',
-  3: 'bg-emerald-500 dark:bg-emerald-500',
-  4: 'bg-emerald-600 dark:bg-emerald-400',
+  0: 'bg-[#ebedf0] dark:bg-[#161b22]',
+  1: 'bg-[#9be9a8] dark:bg-[#0e4429]',
+  2: 'bg-[#40c463] dark:bg-[#006d32]',
+  3: 'bg-[#30a14e] dark:bg-[#26a641]',
+  4: 'bg-[#216e39] dark:bg-[#39d353]',
 }
 
 export function WeeklyActivityDots({
@@ -41,9 +47,9 @@ export function WeeklyActivityDots({
   // Set dayjs locale
   dayjs.locale(isZh ? 'zh-cn' : 'en')
 
-  // Get current week dates (Mon-Sun)
+  // Get current week dates (Mon-Sun) using ISO week (always starts on Monday)
   const today = dayjs()
-  const startOfWeek = today.startOf('week').add(1, 'day') // Monday
+  const startOfWeek = today.startOf('isoWeek') // Monday
 
   const weekDates = Array.from({ length: 7 }, (_, i) => {
     const date = startOfWeek.add(i, 'day')
@@ -71,6 +77,7 @@ export function WeeklyActivityDots({
     return (
       <div className="flex items-center gap-2">
         {[...Array(7)].map((_, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton items
           <div key={i} className="flex flex-col items-center gap-1">
             <div className="w-5 h-5 rounded-md bg-neutral-200 dark:bg-neutral-700 animate-pulse" />
             {showLabels && (

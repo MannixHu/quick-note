@@ -1711,6 +1711,7 @@ export const dailyQuestionRouter = createTRPCRouter({
         .filter((a) => (ratingMap.get(a.questionId) || 0) >= 4)
         .map((a) => ({
           id: a.id,
+          questionId: a.questionId,
           question: a.question.question,
           answer: a.answer,
           rating: ratingMap.get(a.questionId) || 0,
@@ -1849,10 +1850,11 @@ export const dailyQuestionRouter = createTRPCRouter({
       }
 
       // Convert to activity array format for react-activity-calendar
+      // Level mapping: 0=0次, 1=1-2次, 2=3-4次, 3=5-6次, 4=7+次
       const activities = Object.entries(countByDate).map(([date, count]) => ({
         date,
         count,
-        level: Math.min(count, 4) as 0 | 1 | 2 | 3 | 4, // level 0-4
+        level: Math.min(Math.ceil(count / 2), 4) as 0 | 1 | 2 | 3 | 4,
       }))
 
       return {

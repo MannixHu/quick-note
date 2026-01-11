@@ -224,6 +224,7 @@ export function GrowthComparison({ comparisons, isLoading }: GrowthComparisonPro
             </Text>
             <div className="space-y-2 max-h-40 overflow-y-auto">
               {comparison.allAnswers.map((ans, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: answers don't have unique id
                 <div
                   key={`answer-${i}`}
                   className="flex items-start gap-2 text-sm py-1 border-b border-neutral-100 dark:border-neutral-800 last:border-0"
@@ -248,7 +249,7 @@ export function GrowthComparison({ comparisons, isLoading }: GrowthComparisonPro
       items={items}
       defaultActiveKey={comparisons[0]?.category ? [comparisons[0].category] : []}
       className="bg-transparent border-0"
-      expandIconPosition="end"
+      expandIconPlacement="end"
     />
   )
 }

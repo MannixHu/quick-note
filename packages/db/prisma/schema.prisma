@@ -195,3 +195,19 @@ model SmsVerification {
 
   @@index([phone, code])
 }
+
+// Email Verification Codes
+model EmailVerification {
+  id          String   @id @default(cuid())
+  email       String
+  code        String   // 6-digit verification code
+  type        String   // "register" | "reset_password"
+  expires     DateTime // 10 minutes expiry
+  used        Boolean  @default(false)
+  attempts    Int      @default(0) // Failed verification attempts
+
+  createdAt   DateTime @default(now())
+
+  @@index([email, code])
+  @@index([email, type])
+}

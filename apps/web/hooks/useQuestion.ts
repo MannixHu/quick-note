@@ -138,7 +138,7 @@ export function useQuestion({ userId }: UseQuestionOptions): UseQuestionReturn {
       }>
       const apiHistory = data.map((h) => ({
         id: h.id,
-        date: dayjs(h.date).format('YYYY-MM-DD HH:mm'),
+        date: dayjs(h.date).format('YYYY-MM-DD'),
         question: h.question.question,
         answer: h.answer,
       }))
@@ -162,7 +162,7 @@ export function useQuestion({ userId }: UseQuestionOptions): UseQuestionReturn {
       }
       const newAnswer: AnswerHistory = {
         id: data.id,
-        date: dayjs(data.date).format('YYYY-MM-DD HH:mm'),
+        date: dayjs(data.date).format('YYYY-MM-DD'),
         question: data.question.question,
         answer: data.answer,
       }
@@ -182,7 +182,7 @@ export function useQuestion({ userId }: UseQuestionOptions): UseQuestionReturn {
       // Local fallback
       const newAnswer: AnswerHistory = {
         id: `${Date.now()}`,
-        date: dayjs().format('YYYY-MM-DD HH:mm'),
+        date: dayjs().format('YYYY-MM-DD'),
         question: todayQuestion,
         answer: answer.trim(),
       }

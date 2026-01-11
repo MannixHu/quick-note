@@ -1,6 +1,7 @@
 'use client'
 
 import { YearlyHeatmap } from '@/components/activity'
+import { AnswerCard, type AnswerCardItem } from '@/components/daily-question/AnswerCard'
 import { GrowthComparison } from '@/components/review/GrowthComparison'
 import { StatsOverview } from '@/components/review/StatsOverview'
 import { TagDistributionChart } from '@/components/review/TagDistributionChart'
@@ -15,10 +16,11 @@ import { motion } from 'framer-motion'
 import { useLocale } from 'next-intl'
 import { useEffect, useState } from 'react'
 
-const { Text, Paragraph } = Typography
+const { Text } = Typography
 
 interface HighRatedQuestion {
   id: string
+  questionId: string
   question: string
   answer: string
   rating: number
@@ -42,7 +44,8 @@ export default function ReviewPage() {
   const isZh = locale === 'zh-CN'
   const { userId, isAuthenticated, isLoading: authLoading } = useAuth()
   const [period, setPeriod] = useState<'week' | 'month'>('week')
-  const [activityYear, setActivityYear] = useState(dayjs().year())
+  const currentYear = dayjs().year()
+  const [activityYear, setActivityYear] = useState(currentYear)
 
   // i18n texts
   const t = {
@@ -93,6 +96,17 @@ export default function ReviewPage() {
     { userId: userId ?? '', year: activityYear },
     { retry: 2, enabled: !!userId }
   )
+
+  // 如果当前年份没有数据，自动切换到去年
+  useEffect(() => {
+    if (
+      activityQuery.data &&
+      activityYear === currentYear &&
+      activityQuery.data.totalActivities === 0
+    ) {
+      setActivityYear(currentYear - 1)
+    }
+  }, [activityQuery.data, activityYear, currentYear])
 
   // Show loading only while checking auth
   if (authLoading) {
@@ -191,35 +205,38 @@ export default function ReviewPage() {
             />
           </SlideUp>
 
-          {/* Yearly Activity Heatmap */}
-          <SlideUp delay={0.25}>
-            <YearlyHeatmap
-              activities={activityQuery.data?.activities ?? []}
-              year={activityYear}
-              totalActivities={activityQuery.data?.totalActivities ?? 0}
-              activeDays={activityQuery.data?.activeDays ?? 0}
-              isLoading={activityQuery.isLoading}
-              onYearChange={setActivityYear}
-            />
-          </SlideUp>
-
-          {/* Tag Distribution */}
-          <SlideUp delay={0.3}>
-            <Card
-              title={
-                <div className="flex items-center gap-2">
-                  <CalendarOutlined className="text-primary-500" />
-                  <span>{t.topicDistribution}</span>
-                </div>
-              }
-              className="glass !rounded-xl md:!rounded-2xl"
-            >
-              <TagDistributionChart
-                data={stats?.tagDistribution ?? []}
-                isLoading={reviewStatsQuery.isLoading}
+          {/* Activity Heatmap & Tag Distribution - Side by side on desktop */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Yearly Activity Heatmap */}
+            <SlideUp delay={0.25}>
+              <YearlyHeatmap
+                activities={activityQuery.data?.activities ?? []}
+                year={activityYear}
+                totalActivities={activityQuery.data?.totalActivities ?? 0}
+                activeDays={activityQuery.data?.activeDays ?? 0}
+                isLoading={activityQuery.isLoading}
+                onYearChange={setActivityYear}
               />
-            </Card>
-          </SlideUp>
+            </SlideUp>
+
+            {/* Tag Distribution */}
+            <SlideUp delay={0.3}>
+              <Card
+                title={
+                  <div className="flex items-center gap-2">
+                    <CalendarOutlined className="text-primary-500" />
+                    <span>{t.topicDistribution}</span>
+                  </div>
+                }
+                className="glass !rounded-xl md:!rounded-2xl h-full"
+              >
+                <TagDistributionChart
+                  data={stats?.tagDistribution ?? []}
+                  isLoading={reviewStatsQuery.isLoading}
+                />
+              </Card>
+            </SlideUp>
+          </div>
 
           {/* High-Rated Questions */}
           <SlideUp delay={0.4}>
@@ -251,33 +268,24 @@ export default function ReviewPage() {
               ) : (
                 <div className="space-y-4">
                   {(stats.highRatedQuestions as HighRatedQuestion[]).map((item, index) => (
-                    <motion.div
+                    <AnswerCard
                       key={item.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.05 }}
-                      className="p-3 bg-neutral-50 dark:bg-neutral-800/50 rounded-lg"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <Text type="secondary" className="text-xs">
-                          {dayjs(item.date).format('YYYY-MM-DD')}
-                        </Text>
-                        <div className="flex items-center gap-1">
-                          {[...Array(item.rating)].map((_, i) => (
-                            // biome-ignore lint/suspicious/noArrayIndexKey: static star rating
-                            <span key={`star-${i}`} className="text-orange-400 text-xs">
-                              ★
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                      <Text className="text-sm text-neutral-600 dark:text-neutral-400 block mb-2">
-                        Q: {item.question}
-                      </Text>
-                      <Paragraph className="!mb-0 text-sm" ellipsis={{ rows: 2, expandable: true }}>
-                        {item.answer}
-                      </Paragraph>
-                    </motion.div>
+                      item={
+                        {
+                          id: item.id,
+                          questionId: item.questionId,
+                          date: item.date,
+                          question: item.question,
+                          answer: item.answer,
+                          rating: item.rating,
+                          category: item.category,
+                        } as AnswerCardItem
+                      }
+                      index={index}
+                      variant="filled"
+                      showQuestionPrefix
+                      onRatingChange={() => reviewStatsQuery.refetch()}
+                    />
                   ))}
                 </div>
               )}
@@ -320,6 +328,7 @@ export default function ReviewPage() {
               {reviewStatsQuery.isLoading ? (
                 <div className="space-y-3 animate-pulse">
                   {[...Array(5)].map((_, i) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton items
                     <div
                       key={`skeleton-${i}`}
                       className="h-20 bg-neutral-200 dark:bg-neutral-700 rounded"
@@ -331,35 +340,24 @@ export default function ReviewPage() {
               ) : (
                 <div className="space-y-3">
                   {(stats.answers as AnswerItem[]).map((item, index) => (
-                    <motion.div
+                    <AnswerCard
                       key={item.id}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.03 }}
-                      className="p-3 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <Text type="secondary" className="text-xs">
-                          {dayjs(item.date).format('YYYY-MM-DD HH:mm')}
-                        </Text>
-                        {item.rating && (
-                          <div className="flex items-center gap-0.5">
-                            {[...Array(item.rating)].map((_, i) => (
-                              // biome-ignore lint/suspicious/noArrayIndexKey: static star rating
-                              <span key={`star-${i}`} className="text-orange-400 text-xs">
-                                ★
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <Text className="text-sm text-neutral-500 dark:text-neutral-400 block mb-1">
-                        {item.question}
-                      </Text>
-                      <Paragraph className="!mb-0" ellipsis={{ rows: 2, expandable: true }}>
-                        {item.answer}
-                      </Paragraph>
-                    </motion.div>
+                      item={
+                        {
+                          id: item.id,
+                          date: item.date,
+                          question: item.question,
+                          questionId: item.questionId,
+                          answer: item.answer,
+                          rating: item.rating,
+                          category: item.category,
+                        } as AnswerCardItem
+                      }
+                      index={index}
+                      variant="bordered"
+                      animationDelay={0.03}
+                      onRatingChange={() => reviewStatsQuery.refetch()}
+                    />
                   ))}
                 </div>
               )}

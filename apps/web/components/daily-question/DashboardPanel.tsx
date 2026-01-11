@@ -98,7 +98,7 @@ const CATEGORY_LABELS_EN: Record<string, string> = {
 }
 
 export function DashboardPanel({
-  weeklyProgress,
+  weeklyProgress: _weeklyProgress,
   currentStreak,
   topTags,
   todayAnswered,
@@ -137,15 +137,14 @@ export function DashboardPanel({
           {/* Weekly Activity Dots */}
           <div className="flex items-center gap-2">
             <CalendarOutlined className="text-primary-500 text-lg" />
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-neutral-600 dark:text-neutral-400">
-                {isZh ? '本周' : 'This Week'}
-              </span>
-              <WeeklyActivityDots activities={weeklyActivities} isLoading={isLoading} />
-              <span className="text-sm font-medium text-neutral-800 dark:text-neutral-200">
-                {weeklyProgress.answered}/{weeklyProgress.total}
-              </span>
-            </div>
+            <span className="text-sm text-neutral-600 dark:text-neutral-400">
+              {isZh ? '本周' : 'Week'}
+            </span>
+            <WeeklyActivityDots
+              activities={weeklyActivities}
+              isLoading={isLoading}
+              showLabels={false}
+            />
           </div>
 
           {/* Streak */}
@@ -204,7 +203,7 @@ export function DashboardPanel({
         {/* Review Link */}
         <Link
           href={`/${locale}/daily_question/review`}
-          className="flex items-center gap-1 text-sm text-primary-500 hover:text-primary-600 transition-colors group"
+          className="flex items-center gap-1 text-sm text-primary-500 hover:text-primary-600 transition-colors group whitespace-nowrap shrink-0"
         >
           <span>{isZh ? '查看回顾' : 'View Review'}</span>
           <RightOutlined className="text-xs group-hover:translate-x-0.5 transition-transform" />

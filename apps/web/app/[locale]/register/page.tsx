@@ -5,11 +5,19 @@ import { ThemeSwitcher } from '@/components/theme-switcher'
 import { Button, FadeIn, PageTransition, SlideUp, StaggerChildren } from '@/components/ui'
 import { Link, useRouter } from '@/lib/i18n/routing'
 import { trpc } from '@/lib/trpc/client'
-import { LockOutlined, MailOutlined, UserOutlined } from '@ant-design/icons'
-import { App, Form, Input } from 'antd'
+import {
+  ArrowLeftOutlined,
+  LockOutlined,
+  MailOutlined,
+  SafetyOutlined,
+  UserOutlined,
+} from '@ant-design/icons'
+import { App, Form, Input, Steps } from 'antd'
 import { motion } from 'framer-motion'
 import { useTranslations } from 'next-intl'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+
+type Step = 'email' | 'verify'
 
 export default function RegisterPage() {
   const { message } = App.useApp()
@@ -17,41 +25,88 @@ export default function RegisterPage() {
   const tCommon = useTranslations('common')
   const router = useRouter()
 
-  const [loading, setLoading] = useState(false)
-  const [form] = Form.useForm()
+  const [step, setStep] = useState<Step>('email')
+  const [email, setEmail] = useState('')
+  const [countdown, setCountdown] = useState(0)
+  const [emailForm] = Form.useForm()
+  const [verifyForm] = Form.useForm()
 
+  // tRPC mutations
   // @ts-expect-error - tRPC v11 RC type compatibility
-  const registerMutation = trpc.auth.register.useMutation()
+  const sendCodeMutation = trpc.auth.sendEmailCode.useMutation()
+  // @ts-expect-error - tRPC v11 RC type compatibility
+  const verifyCodeMutation = trpc.auth.verifyEmailCode.useMutation()
+  // @ts-expect-error - tRPC v11 RC type compatibility
+  const registerMutation = trpc.auth.registerWithVerification.useMutation()
 
-  // Handle mutation result
-  // biome-ignore lint/correctness/useExhaustiveDependencies: message is a stable ref
+  // Countdown timer
   useEffect(() => {
-    if (registerMutation.isSuccess) {
-      message.success('注册成功，请登录')
-      router.push('/login')
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
+      return () => clearTimeout(timer)
     }
-    if (registerMutation.error) {
-      const error = registerMutation.error as { data?: { code?: string }; message?: string }
-      if (error.data?.code === 'CONFLICT') {
-        message.error('该邮箱已被注册')
-      } else {
-        message.error('注册失败，请稍后重试')
-      }
-    }
-  }, [registerMutation.isSuccess, registerMutation.error, router])
+  }, [countdown])
 
-  const handleSubmit = async (values: { email: string; password: string; name?: string }) => {
-    setLoading(true)
+  // Handle send code
+  const handleSendCode = useCallback(
+    async (values: { email: string }) => {
+      try {
+        await sendCodeMutation.mutateAsync({ email: values.email, type: 'register' })
+        setEmail(values.email)
+        setStep('verify')
+        setCountdown(60)
+        message.success('验证码已发送到您的邮箱')
+      } catch (error) {
+        const err = error as { message?: string }
+        message.error(err.message || '发送验证码失败')
+      }
+    },
+    [sendCodeMutation, message]
+  )
+
+  // Handle resend code
+  const handleResendCode = useCallback(async () => {
+    if (countdown > 0) return
     try {
-      registerMutation.mutate({
-        email: values.email,
-        password: values.password,
-        name: values.name,
-      })
-    } finally {
-      setLoading(false)
+      await sendCodeMutation.mutateAsync({ email, type: 'register' })
+      setCountdown(60)
+      message.success('验证码已重新发送')
+    } catch (error) {
+      const err = error as { message?: string }
+      message.error(err.message || '发送验证码失败')
     }
-  }
+  }, [email, countdown, sendCodeMutation, message])
+
+  // Handle verify and register
+  const handleVerifyAndRegister = useCallback(
+    async (values: { code: string; password: string; name?: string }) => {
+      try {
+        // First verify the code
+        await verifyCodeMutation.mutateAsync({ email, code: values.code, type: 'register' })
+
+        // Then register
+        await registerMutation.mutateAsync({
+          email,
+          password: values.password,
+          name: values.name,
+          code: values.code,
+        })
+
+        message.success('注册成功，请登录')
+        router.push('/login')
+      } catch (error) {
+        const err = error as { message?: string }
+        message.error(err.message || '注册失败')
+      }
+    },
+    [email, verifyCodeMutation, registerMutation, message, router]
+  )
+
+  // Go back to email step
+  const handleBack = useCallback(() => {
+    setStep('email')
+    verifyForm.resetFields()
+  }, [verifyForm])
 
   const benefits = [
     { icon: '✨', text: '简单直观的界面设计' },
@@ -113,94 +168,186 @@ export default function RegisterPage() {
                 </h1>
               </div>
 
-              <div className="mb-8 text-center">
+              <div className="mb-6 text-center">
                 <h2 className="font-display text-2xl font-bold text-gray-900 dark:text-white">
                   {t('register')}
                 </h2>
-                <p className="mt-2 text-gray-500 dark:text-gray-400">创建账号，开启高效生活</p>
+                <p className="mt-2 text-gray-500 dark:text-gray-400">
+                  {step === 'email' ? '输入邮箱获取验证码' : '完成验证并设置密码'}
+                </p>
               </div>
 
-              <Form form={form} layout="vertical" onFinish={handleSubmit} size="large">
-                <Form.Item name="name">
-                  <Input
-                    prefix={<UserOutlined className="text-gray-400" />}
-                    placeholder={t('name')}
-                    className="!rounded-xl !py-3"
-                  />
-                </Form.Item>
+              {/* Progress steps */}
+              <div className="mb-6">
+                <Steps
+                  size="small"
+                  current={step === 'email' ? 0 : 1}
+                  items={[{ title: '验证邮箱' }, { title: '设置密码' }]}
+                />
+              </div>
 
-                <Form.Item
-                  name="email"
-                  rules={[
-                    { required: true, message: '请输入邮箱' },
-                    { type: 'email', message: '请输入有效的邮箱' },
-                  ]}
+              {/* Step 1: Email input */}
+              {step === 'email' && (
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
                 >
-                  <Input
-                    prefix={<MailOutlined className="text-gray-400" />}
-                    placeholder={t('email')}
-                    className="!rounded-xl !py-3"
-                  />
-                </Form.Item>
+                  <Form form={emailForm} layout="vertical" onFinish={handleSendCode} size="large">
+                    <Form.Item
+                      name="email"
+                      rules={[
+                        { required: true, message: '请输入邮箱' },
+                        { type: 'email', message: '请输入有效的邮箱' },
+                      ]}
+                    >
+                      <Input
+                        prefix={<MailOutlined className="text-gray-400" />}
+                        placeholder={t('email')}
+                        className="!rounded-xl !py-3"
+                      />
+                    </Form.Item>
 
-                <Form.Item
-                  name="password"
-                  rules={[
-                    { required: true, message: '请输入密码' },
-                    { min: 6, message: '密码至少6位' },
-                  ]}
+                    <Form.Item className="mb-6 mt-8">
+                      <Button
+                        variant="primary"
+                        htmlType="submit"
+                        block
+                        isLoading={sendCodeMutation.isPending}
+                        className="!h-12 !rounded-xl !text-base !font-semibold btn-glow"
+                      >
+                        获取验证码
+                      </Button>
+                    </Form.Item>
+                  </Form>
+                </motion.div>
+              )}
+
+              {/* Step 2: Verification and password */}
+              {step === 'verify' && (
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
                 >
-                  <Input.Password
-                    prefix={<LockOutlined className="text-gray-400" />}
-                    placeholder={t('password')}
-                    className="!rounded-xl !py-3"
-                  />
-                </Form.Item>
-
-                <Form.Item
-                  name="confirmPassword"
-                  dependencies={['password']}
-                  rules={[
-                    { required: true, message: '请确认密码' },
-                    ({ getFieldValue }) => ({
-                      validator(_, value) {
-                        if (!value || getFieldValue('password') === value) {
-                          return Promise.resolve()
-                        }
-                        return Promise.reject(new Error('两次输入的密码不一致'))
-                      },
-                    }),
-                  ]}
-                >
-                  <Input.Password
-                    prefix={<LockOutlined className="text-gray-400" />}
-                    placeholder={t('confirmPassword')}
-                    className="!rounded-xl !py-3"
-                  />
-                </Form.Item>
-
-                <Form.Item className="mb-6 mt-8">
-                  <Button
-                    variant="primary"
-                    htmlType="submit"
-                    block
-                    isLoading={loading || registerMutation.isPending}
-                    className="!h-12 !rounded-xl !text-base !font-semibold btn-glow"
+                  <Form
+                    form={verifyForm}
+                    layout="vertical"
+                    onFinish={handleVerifyAndRegister}
+                    size="large"
                   >
-                    {t('register')}
-                  </Button>
-                </Form.Item>
+                    {/* Show email with back button */}
+                    <div className="mb-4 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                      <button
+                        type="button"
+                        onClick={handleBack}
+                        className="flex items-center gap-1 text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                      >
+                        <ArrowLeftOutlined className="text-xs" />
+                        返回
+                      </button>
+                      <span className="flex-1 truncate text-right">{email}</span>
+                    </div>
 
-                <div className="text-center">
-                  <span className="text-gray-500 dark:text-gray-400">{t('hasAccount')} </span>
-                  <Link
-                    href="/login"
-                    className="font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 transition-colors"
-                  >
-                    {t('loginNow')}
-                  </Link>
-                </div>
-              </Form>
+                    <Form.Item
+                      name="code"
+                      rules={[
+                        { required: true, message: '请输入验证码' },
+                        { len: 6, message: '验证码为6位数字' },
+                      ]}
+                    >
+                      <Input
+                        prefix={<SafetyOutlined className="text-gray-400" />}
+                        placeholder="6位验证码"
+                        maxLength={6}
+                        className="!rounded-xl !py-3 !tracking-[0.5em] !text-center !font-mono"
+                      />
+                    </Form.Item>
+
+                    {/* Resend button */}
+                    <div className="mb-4 text-center">
+                      <button
+                        type="button"
+                        onClick={handleResendCode}
+                        disabled={countdown > 0 || sendCodeMutation.isPending}
+                        className={`text-sm ${
+                          countdown > 0
+                            ? 'text-gray-400 cursor-not-allowed'
+                            : 'text-primary-600 hover:text-primary-700 dark:text-primary-400'
+                        }`}
+                      >
+                        {countdown > 0 ? `${countdown}秒后重新发送` : '重新发送验证码'}
+                      </button>
+                    </div>
+
+                    <Form.Item name="name">
+                      <Input
+                        prefix={<UserOutlined className="text-gray-400" />}
+                        placeholder={t('name')}
+                        className="!rounded-xl !py-3"
+                      />
+                    </Form.Item>
+
+                    <Form.Item
+                      name="password"
+                      rules={[
+                        { required: true, message: '请输入密码' },
+                        { min: 6, message: '密码至少6位' },
+                      ]}
+                    >
+                      <Input.Password
+                        prefix={<LockOutlined className="text-gray-400" />}
+                        placeholder={t('password')}
+                        className="!rounded-xl !py-3"
+                      />
+                    </Form.Item>
+
+                    <Form.Item
+                      name="confirmPassword"
+                      dependencies={['password']}
+                      rules={[
+                        { required: true, message: '请确认密码' },
+                        ({ getFieldValue }) => ({
+                          validator(_, value) {
+                            if (!value || getFieldValue('password') === value) {
+                              return Promise.resolve()
+                            }
+                            return Promise.reject(new Error('两次输入的密码不一致'))
+                          },
+                        }),
+                      ]}
+                    >
+                      <Input.Password
+                        prefix={<LockOutlined className="text-gray-400" />}
+                        placeholder={t('confirmPassword')}
+                        className="!rounded-xl !py-3"
+                      />
+                    </Form.Item>
+
+                    <Form.Item className="mb-6 mt-8">
+                      <Button
+                        variant="primary"
+                        htmlType="submit"
+                        block
+                        isLoading={verifyCodeMutation.isPending || registerMutation.isPending}
+                        className="!h-12 !rounded-xl !text-base !font-semibold btn-glow"
+                      >
+                        完成注册
+                      </Button>
+                    </Form.Item>
+                  </Form>
+                </motion.div>
+              )}
+
+              <div className="text-center">
+                <span className="text-gray-500 dark:text-gray-400">{t('hasAccount')} </span>
+                <Link
+                  href="/login"
+                  className="font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 transition-colors"
+                >
+                  {t('loginNow')}
+                </Link>
+              </div>
             </motion.div>
 
             {/* Trust indicators */}

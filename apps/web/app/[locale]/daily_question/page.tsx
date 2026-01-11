@@ -1,5 +1,6 @@
 'use client'
 
+import { AnswerCard, type AnswerCardItem } from '@/components/daily-question/AnswerCard'
 import { DashboardPanel } from '@/components/daily-question/DashboardPanel'
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { StarRating } from '@/components/star-rating'
@@ -99,8 +100,6 @@ export default function DailyQuestionPage() {
   const [currentRating, setCurrentRating] = useState<number>(0)
   const [history, setHistory] = useState<AnswerHistory[]>([])
   const [isApiAvailable, setIsApiAvailable] = useState(true)
-  const [editingHistoryId, setEditingHistoryId] = useState<string | null>(null)
-  const [editingHistoryAnswer, setEditingHistoryAnswer] = useState('')
 
   // AI Config
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -221,6 +220,9 @@ export default function DailyQuestionPage() {
       setHistory((prev) => [newAnswer, ...prev])
       setAnswer('')
       message.success('回答已保存')
+      // Refetch dashboard and activity data to update heatmaps
+      dashboardQuery.refetch()
+      activityQuery.refetch()
       // Get next question
       getNextQuestion()
     }
@@ -361,32 +363,6 @@ export default function DailyQuestionPage() {
     message.success('回答已保存')
   }
 
-  // 处理历史记录中的评分变更
-  const handleHistoryRatingChange = (item: AnswerHistory, rating: number) => {
-    if (!userId || !item.questionId) return
-
-    // 乐观更新本地状态
-    setHistory((prev) => prev.map((h) => (h.id === item.id ? { ...h, rating } : h)))
-
-    rateMutation.mutate(
-      { userId, questionId: item.questionId, rating },
-      {
-        onSuccess: () => {
-          message.success('评分已更新')
-          userRatingsQuery.refetch()
-        },
-        onError: (error: unknown) => {
-          console.error('Rating failed:', error)
-          message.error('评分失败')
-          // 回滚
-          setHistory((prev) =>
-            prev.map((h) => (h.id === item.id ? { ...h, rating: item.rating } : h))
-          )
-        },
-      }
-    )
-  }
-
   const handleSubmit = () => {
     if (!answer.trim()) {
       message.warning('请输入你的回答')
@@ -478,29 +454,6 @@ export default function DailyQuestionPage() {
       aiConfig,
       userId: userId ?? undefined,
     })
-  }
-
-  const handleEditHistory = (item: AnswerHistory) => {
-    setEditingHistoryId(item.id)
-    setEditingHistoryAnswer(item.answer)
-  }
-
-  const handleSaveHistoryEdit = (item: AnswerHistory) => {
-    if (!editingHistoryAnswer.trim()) {
-      message.warning('回答不能为空')
-      return
-    }
-    setHistory((prev) =>
-      prev.map((h) => (h.id === item.id ? { ...h, answer: editingHistoryAnswer.trim() } : h))
-    )
-    setEditingHistoryId(null)
-    setEditingHistoryAnswer('')
-    message.success('已保存')
-  }
-
-  const handleCancelHistoryEdit = () => {
-    setEditingHistoryId(null)
-    setEditingHistoryAnswer('')
   }
 
   // Show loading only while checking auth (not when redirecting)
@@ -712,62 +665,21 @@ export default function DailyQuestionPage() {
                 ) : (
                   <div className="space-y-4">
                     {history.map((item, index) => (
-                      <motion.div
+                      <AnswerCard
                         key={item.id}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.3, delay: index * 0.05 }}
-                        className="border-b border-gray-100 dark:border-gray-800 pb-3 last:border-0"
-                      >
-                        {/* 日期和评分 */}
-                        <div className="flex items-center justify-between gap-2 mb-1.5">
-                          <Text type="secondary" className="text-xs">
-                            {item.date}
-                          </Text>
-                          {item.questionId && (
-                            <StarRating
-                              value={item.rating ?? 0}
-                              onChange={(rating) => handleHistoryRatingChange(item, rating)}
-                              size="small"
-                            />
-                          )}
-                        </div>
-                        {/* 问题 - 加粗样式 */}
-                        <Text strong className="text-sm block mb-1.5">
-                          {item.question}
-                        </Text>
-                        {/* 回答 - 可编辑 */}
-                        {editingHistoryId === item.id ? (
-                          <div className="space-y-2">
-                            <Input.TextArea
-                              rows={2}
-                              value={editingHistoryAnswer}
-                              onChange={(e) => setEditingHistoryAnswer(e.target.value)}
-                              className="resize-none text-sm"
-                              autoFocus
-                              variant="borderless"
-                            />
-                            <div className="flex gap-2">
-                              <AntButton size="small" onClick={() => handleSaveHistoryEdit(item)}>
-                                保存
-                              </AntButton>
-                              <AntButton size="small" type="text" onClick={handleCancelHistoryEdit}>
-                                取消
-                              </AntButton>
-                            </div>
-                          </div>
-                        ) : (
-                          <motion.button
-                            type="button"
-                            className="text-sm cursor-pointer text-gray-600 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors text-left bg-transparent border-0 p-0 w-full"
-                            onClick={() => handleEditHistory(item)}
-                            whileHover={{ x: 4 }}
-                            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                          >
-                            {item.answer}
-                          </motion.button>
-                        )}
-                      </motion.div>
+                        item={item as AnswerCardItem}
+                        index={index}
+                        editable
+                        onAnswerSave={(cardItem, newAnswer) => {
+                          setHistory((prev) =>
+                            prev.map((h) =>
+                              h.id === cardItem.id ? { ...h, answer: newAnswer } : h
+                            )
+                          )
+                          message.success('已保存')
+                        }}
+                        variant="default"
+                      />
                     ))}
                   </div>
                 )}
@@ -781,7 +693,17 @@ export default function DailyQuestionPage() {
           title="AI 配置"
           open={settingsOpen}
           onClose={() => setSettingsOpen(false)}
-          styles={{ wrapper: { width: 400 } }}
+          styles={{
+            wrapper: { width: 400 },
+            body: { paddingBottom: 0, overflowY: 'auto' },
+          }}
+          footer={
+            <div className="flex justify-end py-2">
+              <AntButton type="primary" onClick={() => settingsForm.submit()} block>
+                保存配置
+              </AntButton>
+            </div>
+          }
         >
           <Form
             form={settingsForm}
@@ -792,16 +714,30 @@ export default function DailyQuestionPage() {
             <Form.Item
               name="baseURL"
               label="API 地址"
-              tooltip="支持 OpenAI 兼容接口，需以 /v1 结尾"
-              rules={[{ required: true, message: '请输入 API 地址' }]}
+              tooltip="支持 OpenAI 兼容接口 (/chat/completions) 或 Anthropic 接口 (/messages)"
+              rules={[
+                { required: true, message: '请输入 API 地址' },
+                {
+                  validator: (_, value) => {
+                    if (
+                      value &&
+                      !value.includes('/chat/completions') &&
+                      !value.includes('/messages')
+                    ) {
+                      return Promise.reject('API 地址需以 /chat/completions 或 /messages 结尾')
+                    }
+                    return Promise.resolve()
+                  },
+                },
+              ]}
               extra={
                 <Text type="secondary" className="text-xs">
-                  需填写完整地址，如 https://api.deepseek.com/v1/chat/completions
+                  OpenAI 格式: /v1/chat/completions | Anthropic 格式: /v1/messages
                 </Text>
               }
             >
               <Input
-                placeholder="https://api.example.com/v1"
+                placeholder="https://api.example.com/v1/chat/completions"
                 autoComplete="new-password"
                 data-form-type="other"
               />
@@ -912,12 +848,6 @@ export default function DailyQuestionPage() {
                 </span>
               )}
             </div>
-
-            <Form.Item>
-              <AntButton type="primary" htmlType="submit" block>
-                保存配置
-              </AntButton>
-            </Form.Item>
           </Form>
 
           <div className="mt-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-800">

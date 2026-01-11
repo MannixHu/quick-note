@@ -232,7 +232,32 @@ EMAIL_FROM="noreply@your.domain"  # 默认使用 Resend 测试域名
 EMAIL_FROM_NAME="快记"
 ```
 
-### 使用方法
+### 邮箱验证 API
+
+| API | 功能 |
+|-----|------|
+| `auth.sendEmailCode` | 发送验证码 (注册/重置密码) |
+| `auth.verifyEmailCode` | 验证验证码 |
+| `auth.registerWithVerification` | 邮箱验证后注册 |
+| `auth.resetPasswordWithCode` | 邮箱验证后重置密码 |
+
+**安全特性：**
+- 60秒发送间隔限制
+- 10分钟验证码有效期
+- 5次错误尝试后锁定
+- 24小时自动清理过期记录
+
+### 前端流程
+
+**注册流程 (`/register`):**
+1. 输入邮箱 → 发送验证码
+2. 输入验证码 + 密码 → 完成注册
+
+**忘记密码流程 (`/forgot-password`):**
+1. 输入邮箱 → 发送验证码
+2. 输入验证码 + 新密码 → 重置成功
+
+### 底层 API 使用
 
 ```typescript
 import { createEmailService, EmailService } from '@app/api/services/email'
