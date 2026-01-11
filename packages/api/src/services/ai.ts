@@ -51,28 +51,48 @@ export class AIService {
     return this.baseURL.includes('openrouter')
   }
 
+  /**
+   * 判断是否是 Anthropic 风格的 API (/messages 端点)
+   */
+  private isAnthropicStyle(): boolean {
+    return this.baseURL.includes('/messages')
+  }
+
+  /**
+   * 获取请求 headers
+   */
+  private getHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    }
+
+    if (this.isAnthropicStyle()) {
+      // Anthropic API 使用 x-api-key
+      headers['x-api-key'] = this.config.apiKey
+      headers['anthropic-version'] = '2023-06-01'
+    } else {
+      // OpenAI 兼容 API 使用 Bearer token
+      headers.Authorization = `Bearer ${this.config.apiKey}`
+    }
+
+    if (this.isOpenRouter()) {
+      headers['HTTP-Referer'] = 'https://github.com/mannix-lei/quick-note'
+      headers['X-Title'] = 'QuickNote App'
+    }
+
+    return headers
+  }
+
   async ping(): Promise<{ latency: number; model: string; baseURL: string }> {
     const startTime = Date.now()
 
     try {
       const response = await fetch(this.baseURL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.config.apiKey}`,
-          ...(this.isOpenRouter() && {
-            'HTTP-Referer': 'https://github.com/mannix-lei/quick-note',
-            'X-Title': 'QuickNote App',
-          }),
-        },
+        headers: this.getHeaders(),
         body: JSON.stringify({
           model: this.defaultModel,
-          messages: [
-            {
-              role: 'user',
-              content: 'Hi',
-            },
-          ],
+          messages: [{ role: 'user', content: 'Hi' }],
           max_tokens: 5,
         }),
       })
@@ -198,33 +218,40 @@ tag 必须从以下选择: ${tagList}
     const prompt = rolePrompt + formatPrompt
 
     try {
+      // Anthropic API 不支持同时指定 temperature 和 top_p
+      const requestBody = this.isAnthropicStyle()
+        ? {
+            model: this.defaultModel,
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 1.0,
+            max_tokens: 2000,
+          }
+        : {
+            model: this.defaultModel,
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 1.0,
+            top_p: 0.95,
+            max_tokens: 2000,
+          }
+
       const response = await fetch(this.baseURL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.config.apiKey}`,
-          ...(this.isOpenRouter() && {
-            'HTTP-Referer': 'https://github.com/mannix-lei/quick-note',
-            'X-Title': 'QuickNote App',
-          }),
-        },
-        body: JSON.stringify({
-          model: this.defaultModel,
-          messages: [
-            {
-              role: 'user',
-              content: prompt,
-            },
-          ],
-          temperature: 1.0, // 提高到 1.0 增加随机性
-          top_p: 0.95, // 核采样，增加多样性
-          max_tokens: 2000,
-        }),
+        headers: this.getHeaders(),
+        body: JSON.stringify(requestBody),
       })
 
       if (!response.ok) {
         const error = await response.text()
         throw new Error(`AI API error: ${response.status} - ${error}`)
+      }
+
+      // Check content type before parsing JSON
+      const contentType = response.headers.get('content-type')
+      if (!contentType?.includes('application/json')) {
+        const text = await response.text()
+        throw new Error(
+          `API returned non-JSON response (${contentType}). First 200 chars: ${text.slice(0, 200)}`
+        )
       }
 
       const data = await response.json()
@@ -293,22 +320,10 @@ ${recentAnswers}
     try {
       const response = await fetch(this.baseURL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.config.apiKey}`,
-          ...(this.isOpenRouter() && {
-            'HTTP-Referer': 'https://github.com/mannix-lei/quick-note',
-            'X-Title': 'QuickNote App',
-          }),
-        },
+        headers: this.getHeaders(),
         body: JSON.stringify({
           model: this.defaultModel,
-          messages: [
-            {
-              role: 'user',
-              content: prompt,
-            },
-          ],
+          messages: [{ role: 'user', content: prompt }],
           temperature: 0.9,
           max_tokens: 500,
         }),
@@ -317,6 +332,15 @@ ${recentAnswers}
       if (!response.ok) {
         const error = await response.text()
         throw new Error(`AI API error: ${response.status} - ${error}`)
+      }
+
+      // Check content type before parsing JSON
+      const contentType = response.headers.get('content-type')
+      if (!contentType?.includes('application/json')) {
+        const text = await response.text()
+        throw new Error(
+          `API returned non-JSON response (${contentType}). First 200 chars: ${text.slice(0, 200)}`
+        )
       }
 
       const data = await response.json()
